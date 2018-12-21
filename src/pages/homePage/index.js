@@ -23,7 +23,6 @@ export default class HomePage extends React.Component<any, any> {
         }
     }
 
-
     addClicked = () => {
         this.setState({
             isAddClicked: true

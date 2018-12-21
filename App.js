@@ -8,7 +8,8 @@
 
 import React, {Component} from 'react';
 import {Platform, StyleSheet, Text, View} from 'react-native';
-import HomePage from './src/pages/homePage/index';
+// import HomePage from './src/pages/homePage/index';
+import Navigator from './src/router/routerSetting';
 
 const instructions = Platform.select({
   ios: 'Press Cmd+R to reload,\n' + 'Cmd+D or shake for dev menu',
@@ -17,13 +18,34 @@ const instructions = Platform.select({
     'Shake or press menu button for dev menu',
 });
 
+
+
 type Props = {};
 export default class App extends Component<Props> {
-  render() {
-    return (
-        <HomePage></HomePage>
-    );
-  }
+
+    constructor(props) {
+        super(props);
+    }
+
+
+    render() {
+        // const info = this.state.realm
+        //     ? 'Number of dogs in this Realm: ' + this.state.realm.objects('Dog').length
+        //     : 'Loading...';
+
+        return (
+            <View style={styles.container}>
+                <Navigator/>
+            </View>
+        );
+    }
+
+
+  // render() {
+  //   return (
+
+  //   );
+  // }
 }
 
 const styles = StyleSheet.create({
