@@ -8,8 +8,8 @@
 
 import React, {Component} from 'react';
 import {Platform, StyleSheet, Text, View} from 'react-native';
-// import HomePage from './src/pages/homePage/index';
-import Navigator from './src/router/routerSetting';
+// import MainNavigation from "./src/router/routerSetting";
+import AppRouter from './src/router/routerSetting';
 
 const instructions = Platform.select({
   ios: 'Press Cmd+R to reload,\n' + 'Cmd+D or shake for dev menu',
@@ -18,51 +18,15 @@ const instructions = Platform.select({
     'Shake or press menu button for dev menu',
 });
 
-
-
-type Props = {};
 export default class App extends Component<Props> {
 
     constructor(props) {
         super(props);
     }
 
-
     render() {
-        // const info = this.state.realm
-        //     ? 'Number of dogs in this Realm: ' + this.state.realm.objects('Dog').length
-        //     : 'Loading...';
-
         return (
-            <View style={styles.container}>
-                <Navigator/>
-            </View>
+            <AppRouter/>
         );
     }
-
-
-  // render() {
-  //   return (
-
-  //   );
-  // }
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F5FCFF',
-  },
-  welcome: {
-    fontSize: 20,
-    textAlign: 'center',
-    margin: 10,
-  },
-  instructions: {
-    textAlign: 'center',
-    color: '#333333',
-    marginBottom: 5,
-  },
-});

@@ -1,12 +1,10 @@
-// Main Screens for Drawer Navigator
 import { createStackNavigator,  createAppContainer, createDrawerNavigator  } from 'react-navigation';
 
 import HomePage from '../pages/homePage/index';
 import NewNote from '../pages/newNote/index';
-import MyDrawer from '../pages/drawer/index';
 import Login from '../pages/login/index';
 
-export const AppRouter = createStackNavigator({
+export const AppStack = createStackNavigator({
     Login: {
         screen: Login,
         navigationOptions: {
@@ -31,4 +29,4 @@ export const AppRouter = createStackNavigator({
 });
 
 
-export default createAppContainer(AppRouter);
+export default createAppContainer(AppStack);
