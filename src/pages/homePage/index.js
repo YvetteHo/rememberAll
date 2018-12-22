@@ -80,15 +80,7 @@ export default class HomePage extends React.Component<any, any> {
                 <View style={{position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center'}}>
                     <TouchableOpacity onPress={this.addClicked} style={styles.button}>
                         <Icon name="add-circle" size={64} color="#FF5722" title="Go to Details"
-                              onPress={() => {
-                                  console.log(this.props);
-                                  this.props.navigation.dispatch(StackActions.reset({
-                                      index: 0,
-                                      actions: [
-                                          NavigationActions.navigate({ routeName: 'NewNote' })
-                                      ],
-                                  }))
-                              }}/>
+                              onPress={() => {this.props.navigation.navigate('NewNote')}}/>
 
                     </TouchableOpacity>
                 </View>

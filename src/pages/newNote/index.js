@@ -5,23 +5,18 @@ import Icon from 'react-native-vector-icons/dist/MaterialIcons';
 import {Drawer, Button, WhiteSpace} from 'antd-mobile-rn';
 import { StackActions, NavigationActions } from 'react-navigation';
 
+let navigation = null;
 export default class NewNote extends React.Component<any, any> {
     constructor(props) {
         super(props);
     }
-
     render() {
         return (
             <View style={{flex: 1}}>
+                <Button
+                    onClick={() => this.props.navigation.goBack()}
+                >回去</Button>
 
-                <View style={{height: 45}} >
-                    <TouchableOpacity
-                        onPress={() => this.drawer && this.drawer.openDrawer()}
-                        style={{width: 45, marginLeft: 10}}
-                    >
-
-                    </TouchableOpacity>
-                </View>
                 <ScrollView>
                     <Text style={{fontSize: 100}}>咕咕咕咕咕咕</Text>
 

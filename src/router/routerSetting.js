@@ -3,17 +3,9 @@ import { createStackNavigator,  createAppContainer, createDrawerNavigator  } fro
 
 import HomePage from '../pages/homePage/index';
 import NewNote from '../pages/newNote/index';
-import MyDrawer from '../pages/drawer/index';
 import Login from '../pages/login/index';
 
-export const AppRouter = createStackNavigator({
-    Login: {
-        screen: Login,
-        navigationOptions: {
-            header: null,
-            gesturesEnabled: false
-        }
-    },
+const DrawerNavigator = createDrawerNavigator({
     Home: {
         screen: HomePage,
         navigationOptions: {
@@ -23,6 +15,23 @@ export const AppRouter = createStackNavigator({
     },
     NewNote: {
         screen: NewNote,
+        navigationOptions: {
+            header: null,
+            gesturesEnabled: false
+        }
+    }
+});
+
+export const AppRouter = createStackNavigator({
+    Login: {
+        screen: Login,
+        navigationOptions: {
+            header: null,
+            gesturesEnabled: false
+        }
+    },
+    Drawer: {
+        screen: DrawerNavigator,
         navigationOptions: {
             header: null,
             gesturesEnabled: false
