@@ -5,7 +5,6 @@ import Icon from 'react-native-vector-icons/dist/MaterialIcons';
 import {Drawer, Button, WhiteSpace} from 'antd-mobile-rn';
 import { StackActions, NavigationActions } from 'react-navigation';
 
-let navigation = null;
 export default class NewNote extends React.Component<any, any> {
     constructor(props) {
         super(props);
@@ -21,8 +20,6 @@ export default class NewNote extends React.Component<any, any> {
                     <Text style={{fontSize: 100}}>咕咕咕咕咕咕</Text>
 
                 </ScrollView>
-
-
 
             </View>
         );

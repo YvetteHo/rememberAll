@@ -5,7 +5,7 @@ import HomePage from '../pages/homePage/index';
 import NewNote from '../pages/newNote/index';
 import Login from '../pages/login/index';
 
-const DrawerNavigator = createDrawerNavigator({
+const DrawerNavigator = createStackNavigator({
     Home: {
         screen: HomePage,
         navigationOptions: {
@@ -20,6 +20,9 @@ const DrawerNavigator = createDrawerNavigator({
             gesturesEnabled: false
         }
     }
+}, {
+    initialRouteName: 'Home',
+
 });
 
 export const AppRouter = createStackNavigator({
