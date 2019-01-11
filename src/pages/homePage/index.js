@@ -38,7 +38,6 @@ export default class HomePage extends React.Component<any, any> {
 
     render() {
         navigator = this.props.navigation;
-
         const sidebar = (
             <ScrollView style={{backgroundColor: 'white'}}>
                 <Text>你是狗吧</Text>
@@ -46,8 +45,6 @@ export default class HomePage extends React.Component<any, any> {
         );
         return (
             <SafeAreaView style={{flex: 1, backgroundColor: '#fff'}}>
-
-                <View style={{flex: 1}}>
                     <Drawer sidebar={sidebar} position='left'
                             open={false} drawerRef={el => (this.drawer = el)}
                             onOpenChange={this.onOpenChange}
@@ -59,6 +56,7 @@ export default class HomePage extends React.Component<any, any> {
                                 <Icon name="list" size={45} color="#FF5722"/>
                             </TouchableOpacity>
                         } titleElement='笔记'/>
+
                         <ScrollView>
                             <Text style={{fontSize: 100}}>喵喵喵喵喵喵喵喵喵喵喵喵</Text>
                             <Text style={{fontSize: 100}}>汪汪汪汪汪汪汪汪汪汪汪汪</Text>
@@ -86,7 +84,6 @@ export default class HomePage extends React.Component<any, any> {
                         </View>
 
                     </Drawer>
-                </View>
             </SafeAreaView>
 
         );
