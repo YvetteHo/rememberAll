@@ -18,6 +18,9 @@ import {
 import {AudioRecorder, AudioUtils} from 'react-native-audio';
 import Sound from 'react-native-sound';
 import Icon from "react-native-vector-icons/dist/MaterialIcons";
+// const uuidv1 = require('uuid/v1');
+const { width, height } = Dimensions.get('window');
+
 
 export default class AudioOperation extends React.Component<any, any> {
     constructor(props) {
@@ -28,9 +31,9 @@ export default class AudioOperation extends React.Component<any, any> {
             paused: false,
             stoppedRecording: false,
             finished: false,
-            audioPath: AudioUtils.DocumentDirectoryPath + '/test.aac',
+            audioPath: AudioUtils.DocumentDirectoryPath + 'test.aac',
             hasPermission: undefined,
-        }
+        };
     }
 
     prepareRecordingPath = (audioPath) => {
@@ -41,6 +44,25 @@ export default class AudioOperation extends React.Component<any, any> {
             AudioEncoding: "aac",
             AudioEncodingBitRate: 32000
         });
+    };
+
+    micClicked = () => {
+        if (!this.state.recording) {
+            this._record();
+        }
+        if (this.state.recording) {
+            this._stop();
+        }
+
+    };
+
+    pauseClicked = () => {
+        if (this.state.recording && this.state.paused) {
+            this._resume();
+        }
+        if (this.state.recording && !this.state.paused) {
+            this._pause();
+        }
     };
 
     _renderButton = (title, onPress, active) => {
@@ -86,7 +108,6 @@ export default class AudioOperation extends React.Component<any, any> {
             console.warn('Can\'t resume, not paused!');
             return;
         }
-
         try {
             await AudioRecorder.resumeRecording();
             this.setState({paused: false});
@@ -166,6 +187,7 @@ export default class AudioOperation extends React.Component<any, any> {
     }
 
     _finishRecording(didSucceed, filePath, fileSize) {
+
         this.setState({ finished: didSucceed });
         console.log(`Finished recording of duration ${this.state.currentTime} seconds at path: ${filePath} and size of ${fileSize || 0} bytes`);
     }
@@ -194,14 +216,37 @@ export default class AudioOperation extends React.Component<any, any> {
 
     render() {
         return (
-            <View>
-                    {this._renderButton("RECORD", () => {this._record()}, this.state.recording )}
-                    {this._renderButton("PLAY", () => {this._play()} )}
-                    {this._renderButton("STOP", () => {this._stop()} )}
-                    {/* {this._renderButton("PAUSE", () => {this._pause()} )} */}
-                    {this._renderPauseButton(() => {this.state.paused ? this._resume() : this._pause()})}
+            <SafeAreaView style={styles.container}>
+                    {/*{this._renderButton("RECORD", () => {this._record()}, this.state.recording )}*/}
+                    {/*{this._renderButton("PLAY", () => {this._play()} )}*/}
+
+                    {/*{this._renderButton("STOP", () => {this._stop()} )}*/}
+                    {/*/!* {this._renderButton("PAUSE", () => {this._pause()} )} *!/*/}
+                    {/*{this._renderPauseButton(() => {this.state.paused ? this._resume() : this._pause()})}*/}
                     <Text style={styles.progressText}>{this.state.currentTime}s</Text>
-            </View>
+                    <View style={{flex: 1}}/>
+                    <View style={styles.footerContainer}>
+                        <View style={styles.footerLeft}/>
+                        <View style={styles.footerCenter}>
+                            <TouchableOpacity onPress={this.micClicked}>
+                                {this.state.recording ?
+                                    <Icon name="stop" size={64} color="#FF5722"/> :
+                                    <Icon name="fiber-manual-record" size={64} color="#FF5722"/>
+                                }
+                            </TouchableOpacity>
+                        </View>
+                        {this.state.recording ? <View style={styles.footerRight}>
+                            <TouchableOpacity onPress={this.pauseClicked}>
+                                {this.state.recording && this.state.paused?
+                                    <Icon name="play-arrow" size={64} color="#FF5722"/> :
+                                    <Icon name="pause" size={64} color="#FF5722"/>
+                                }
+                            </TouchableOpacity>
+                        </View> : <View style={styles.footerRight}/>}
+
+                    </View>
+            </SafeAreaView>
+
 
         );
     }
@@ -213,7 +258,8 @@ export default class AudioOperation extends React.Component<any, any> {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#2b608a",
+        width: width,
+        alignItems: 'center'
     },
     controls: {
         justifyContent: 'center',
@@ -238,28 +284,26 @@ const styles = StyleSheet.create({
     activeButtonText: {
         fontSize: 20,
         color: "#B81F00"
+    },
+    footerContainer: {
+        // flex: 1,
+        // position: 'absolute',
+        // bottom: 0,
+        justifyContent: 'space-between',
+        flexDirection: 'row',
+    },
+    footerCenter: {
+        alignItems: 'center',
+        flex: 1,
+    },
+    footerLeft: {
+        // marginLeft: 5,
+        flex: 1,
+    },
+    footerRight: {
+        // marginRight: 5,
+        alignItems: 'flex-end',
+        flex: 1,
     }
 
 });
-// const styles = StyleSheet.create({
-//     footerContainer: {
-//         position: 'absolute',
-//         left: 0,
-//         right: 0,
-//         bottom: 6,
-//         justifyContent: 'center',
-//     },
-//     footerCenter: {
-//         alignItems: 'center',
-//         justifyContent: 'center',
-//         flex: 1,
-//     },
-//     footerLeft: {
-//         marginLeft: 5,
-//         flex: 1,
-//     },
-//     footerRight: {
-//         marginRight: 5,
-//         flex: 1,
-//     }
-// });

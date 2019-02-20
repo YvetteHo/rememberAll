@@ -1,0 +1,24 @@
+import Realm from 'realm';
+
+const NOTE_SCHEMA = "NoteList";
+const AUDIO_SCHEMA = "AudioList";
+
+export const NoteSchema = {
+    name: NOTE_SCHEMA,
+    primaryKey: 'id',
+    properties: {
+        id: 'int',
+        noteType: 'string',
+        noteContent: 'string',
+    }
+};
+
+export const audioSchema = {
+    name: AUDIO_SCHEMA,
+    primaryKey: 'id',
+    properties: {
+        id: 'int',
+        position: 'int',
+        blob: 'string',
+    }
+};

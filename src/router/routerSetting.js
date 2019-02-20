@@ -22,7 +22,6 @@ const DrawerNavigator = createStackNavigator({
     }
 }, {
     initialRouteName: 'Home',
-
 });
 
 export const AppRouter = createStackNavigator({
@@ -41,6 +40,5 @@ export const AppRouter = createStackNavigator({
         }
     }
 });
-
 
 export default createAppContainer(AppRouter);

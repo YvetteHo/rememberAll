@@ -11,7 +11,6 @@ import {
 import Icon from 'react-native-vector-icons/dist/MaterialIcons';
 import Header from "../../components/header";
 import AudioOperation from "../../components/audioOperation";
-import {Modal} from 'antd-mobile-rn';
 
 const {width, height} = Dimensions.get('window');
 
@@ -20,12 +19,6 @@ export default class NewNote extends React.Component<any, any> {
         super(props);
         this.state = {
             recording: false,
-            // currentTime: 0.0,
-            // paused: false,
-            // stoppedRecording: false,
-            // finished: false,
-            // audioPath: AudioUtils.DocumentDirectoryPath + '/test.aac',
-            // hasPermission: undefined,
         }
     }
 
@@ -49,34 +42,34 @@ export default class NewNote extends React.Component<any, any> {
     render() {
         return (
             <View style={styles.container}>
-                <View style={styles.maskStyle}>
+                {this.state.recording? <View style={styles.maskView}>
+                </View> : <View/>}
+                {this.state.recording? <View style={styles.floatView}>
                     <AudioOperation/>
-                </View>
-            <SafeAreaView style={styles.container}>
-                <Header leftElement={
-                    <TouchableOpacity
-                        onPress={() => this.props.navigation.goBack()}
-                        style={{width: 45, marginLeft: 10}}>
-                        <Icon name="keyboard-arrow-left" size={45} color="#FF5722"/>
-                    </TouchableOpacity>}
-                        titleElement='新笔记'
-                />
+                </View> : <View/>}
+                    <SafeAreaView style={styles.container}>
+                        <Header leftElement={
+                            <TouchableOpacity
+                                onPress={() => this.props.navigation.goBack()}
+                                style={{width: 45, marginLeft: 10}}>
+                                <Icon name="keyboard-arrow-left" size={45} color="#FF5722"/>
+                            </TouchableOpacity>}
+                                titleElement='新笔记'
+                        />
 
-                <View style={styles.fullScreen}>
-                    <Text>你是魔鬼吗</Text>
-                    <ScrollView>
-                        <Text style={{fontSize: 100}}>咕咕咕咕咕咕</Text>
-                    </ScrollView>
-                    <View style={styles.footerContainer}>
-                        <View style={styles.footerCenter}>
-                            <TouchableOpacity onPress={this.micClicked}>
-                                {this.state.recording ? <Icon name="stop" size={64} color="#FF5722"/>
-                                    : <Icon name="mic" size={64} color="#FF5722"/>}
-                            </TouchableOpacity>
+                        <View style={styles.fullScreen}>
+                            <ScrollView>
+                                <Text style={{fontSize: 100}}>咕咕咕咕咕咕</Text>
+                            </ScrollView>
+                            <View style={styles.footerContainer}>
+                                <View style={styles.footerCenter}>
+                                    <TouchableOpacity onPress={this.micClicked}>
+                                            <Icon name="mic" size={64} color="#FF5722"/>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
                         </View>
-                    </View>
-                </View>
-            </SafeAreaView>
+                    </SafeAreaView>
             </View>
         );
 
@@ -87,19 +80,22 @@ export default class NewNote extends React.Component<any, any> {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        zIndex: 3,
     },
     fullScreen: {
         flex:1,
     },
-    maskStyle: {
+    absolute: {
+        position: "absolute",
+        top: 0, left: 0, bottom: 0, right: 0,
+    },
+    maskView: {
         position: 'absolute',
         top: 0,
         left: 0,
         width: '100%',
         height: '100%',
         backgroundColor:'black',
-        opacity: 0.5,
+        opacity: 0.8,
         justifyContent: 'center',
         alignItems: 'center',
         flex: 1,
@@ -111,20 +107,23 @@ const styles = StyleSheet.create({
         left: 0,
         width: '100%',
         height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
         flex: 1,
+        zIndex: 4,
     },
     footerContainer: {
         position: 'absolute',
         left: 0,
-        right: 0,
-        bottom: 6,
+        // right: 0,
+        bottom: 0,
         justifyContent: 'center',
+        flexDirection: 'row',
     },
     footerCenter: {
         alignItems: 'center',
         justifyContent: 'center',
         flex: 1,
-        zIndex: 5
     },
     footerLeft: {
         marginLeft: 5,
