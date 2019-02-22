@@ -18,7 +18,7 @@ import {
 import {AudioRecorder, AudioUtils} from 'react-native-audio';
 import Sound from 'react-native-sound';
 import Icon from "react-native-vector-icons/dist/MaterialIcons";
-// const uuidv1 = require('uuid/v1');
+const uuid = require('uuid/v1');
 const { width, height } = Dimensions.get('window');
 
 
@@ -31,7 +31,7 @@ export default class AudioOperation extends React.Component<any, any> {
             paused: false,
             stoppedRecording: false,
             finished: false,
-            audioPath: AudioUtils.DocumentDirectoryPath + 'test.aac',
+            audioPath: AudioUtils.DocumentDirectoryPath + '/test.aac',
             hasPermission: undefined,
         };
     }
@@ -188,7 +188,7 @@ export default class AudioOperation extends React.Component<any, any> {
 
     _finishRecording(didSucceed, filePath, fileSize) {
 
-        this.setState({ finished: didSucceed });
+        // this.setState({ finished: didSucceed });
         console.log(`Finished recording of duration ${this.state.currentTime} seconds at path: ${filePath} and size of ${fileSize || 0} bytes`);
     }
 
@@ -210,9 +210,14 @@ export default class AudioOperation extends React.Component<any, any> {
                 if (Platform.OS === 'ios') {
                     this._finishRecording(data.status === "OK", data.audioFileURL, data.audioFileSize);
                 }
+                this.endRecording();
             };
         });
     }
+    endRecording = () => {
+        this.props.endRecording('end');
+        console.log('end')
+    };
 
     render() {
         return (
@@ -243,7 +248,6 @@ export default class AudioOperation extends React.Component<any, any> {
                                 }
                             </TouchableOpacity>
                         </View> : <View style={styles.footerRight}/>}
-
                     </View>
             </SafeAreaView>
 

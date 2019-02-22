@@ -2,7 +2,7 @@ import React from 'react';
 import {SafeAreaView, Platform, Animated, Text, View, Image, TouchableOpacity, StyleSheet, ScrollView, Dimensions} from 'react-native';
 import Svg, {Path, G, Circle} from 'react-native-svg';
 import Icon from 'react-native-vector-icons/dist/MaterialIcons';
-import {Drawer, Button, WhiteSpace} from 'antd-mobile-rn';
+import {Drawer, Button, WhiteSpace, Card} from 'antd-mobile-rn';
 import Header from "../../components/header";
 const { width, height } = Dimensions.get('window');
 // const SafeAreaView = withSafeArea(View, 'margin', 'all');
@@ -23,6 +23,7 @@ export default class HomePage extends React.Component<any, any> {
         this.state = {
             isAddClicked: false,
             drawerOpen: true,
+            notes: [],
         }
     }
 
@@ -58,6 +59,17 @@ export default class HomePage extends React.Component<any, any> {
                         } titleElement='笔记'/>
 
                         <ScrollView>
+                            <Card>
+                                <Card.Body>
+                                    <View style={{ height: 42 }}>
+                                        <Text style={{ marginLeft: 16 }}>Card Content</Text>
+                                    </View>
+                                </Card.Body>
+                                <Card.Footer
+                                    content="footer content"
+                                    extra="footer extra content"
+                                />
+                            </Card>
                             <Text style={{fontSize: 100}}>喵喵喵喵喵喵喵喵喵喵喵喵</Text>
                             <Text style={{fontSize: 100}}>汪汪汪汪汪汪汪汪汪汪汪汪</Text>
                         </ScrollView>

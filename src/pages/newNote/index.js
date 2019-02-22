@@ -11,6 +11,9 @@ import {
 import Icon from 'react-native-vector-icons/dist/MaterialIcons';
 import Header from "../../components/header";
 import AudioOperation from "../../components/audioOperation";
+import {WhiteSpace, Card} from 'antd-mobile-rn';
+import {insertNote, updateNote, deleteNote} from "../../database/schemas";
+import realm from "../../database/schemas";
 
 const {width, height} = Dimensions.get('window');
 
@@ -19,9 +22,9 @@ export default class NewNote extends React.Component<any, any> {
         super(props);
         this.state = {
             recording: false,
-        }
+        };
+        this.endRecording = this.endRecording.bind(this);
     }
-
 
     micClicked = () => {
 
@@ -35,8 +38,12 @@ export default class NewNote extends React.Component<any, any> {
 
     };
 
-    stop = () => {
+    endRecording(e) {
+        console.log('结束了哦')
 
+        this.setState({
+            recording: false
+        })
     };
 
     render() {
@@ -45,7 +52,7 @@ export default class NewNote extends React.Component<any, any> {
                 {this.state.recording? <View style={styles.maskView}>
                 </View> : <View/>}
                 {this.state.recording? <View style={styles.floatView}>
-                    <AudioOperation/>
+                    <AudioOperation endRecording={(e) => this.endRecording(e)}/>
                 </View> : <View/>}
                     <SafeAreaView style={styles.container}>
                         <Header leftElement={
