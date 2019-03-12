@@ -5,9 +5,8 @@ import {NavigationActions, StackActions} from "react-navigation";
 import Header from '../../components/header';
 import Icon from "react-native-vector-icons/dist/MaterialIcons";
 
-
 const icon = <Icon name="list" size={45} color="#FF5722"/>;
-export default class Login extends React.Component<any, any> {
+export default class Login extends React.Component{
     constructor(props) {
         super(props);
     }

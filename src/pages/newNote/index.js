@@ -11,17 +11,18 @@ import {
 import Icon from 'react-native-vector-icons/dist/MaterialIcons';
 import Header from "../../components/header";
 import AudioOperation from "../../components/audioOperation";
-import {WhiteSpace, Card} from 'antd-mobile-rn';
+import {WhiteSpace, Card, Modal} from 'antd-mobile-rn';
 import {insertNote, updateNote, deleteNote} from "../../database/schemas";
-import realm from "../../database/schemas";
-
+const uuid = require('uuid/v1');
 const {width, height} = Dimensions.get('window');
 
-export default class NewNote extends React.Component<any, any> {
+export default class NewNote extends React.Component{
     constructor(props) {
         super(props);
         this.state = {
             recording: false,
+            change: false,
+            modalVisible: true,
         };
         this.endRecording = this.endRecording.bind(this);
     }
@@ -33,7 +34,8 @@ export default class NewNote extends React.Component<any, any> {
         } else {
         }
         this.setState({
-            recording: !this.state.recording
+            recording: !this.state.recording,
+            change: true
         })
 
     };
@@ -46,7 +48,38 @@ export default class NewNote extends React.Component<any, any> {
         })
     };
 
+    save = () => {
+        console.log('保存');
+        Modal.prompt(
+            '保存笔记',
+            null,
+            name => {
+                console.log(`name: ${name}`);
+                insertNote({
+                    id: uuid(),
+                    name: name,
+                    time: new Date(),
+                    noteType: '',
+                    noteContent: [],
+                });
+                this.props.navigation.goBack()
+            },
+            'default',
+            '新日志',
+            ['请输入日志名']
+        );
+
+    };
+
     render() {
+        const { navigation } = this.props;
+        const item = navigation.getParam('item', null);
+        console.log('item', JSON.stringify(item));
+
+        const footerButtons = [
+            { text: 'Cancel', onPress: () => console.log('cancel') },
+            { text: 'Ok', onPress: () => console.log('ok') },
+        ];
         return (
             <View style={styles.container}>
                 {this.state.recording? <View style={styles.maskView}>
@@ -56,12 +89,19 @@ export default class NewNote extends React.Component<any, any> {
                 </View> : <View/>}
                     <SafeAreaView style={styles.container}>
                         <Header leftElement={
-                            <TouchableOpacity
+                            this.state.change ? <TouchableOpacity
+                                onPress={this.save}
+                                style={{width: 45, marginLeft: 10}}>
+                                <Icon name="check" size={45} color="#FF5722"/>
+                            </TouchableOpacity> :
+                                <TouchableOpacity
                                 onPress={() => this.props.navigation.goBack()}
                                 style={{width: 45, marginLeft: 10}}>
                                 <Icon name="keyboard-arrow-left" size={45} color="#FF5722"/>
-                            </TouchableOpacity>}
-                                titleElement='新笔记'
+                            </TouchableOpacity>
+
+                        }
+                                titleElement=  {item ? item.name : '新笔记'}
                         />
 
                         <View style={styles.fullScreen}>

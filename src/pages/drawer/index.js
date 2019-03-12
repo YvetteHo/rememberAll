@@ -2,7 +2,7 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Drawer, List, WhiteSpace } from 'antd-mobile-rn';
 
-export default class MyDrawer extends React.Component<any, any> {
+export default class MyDrawer extends React.Component{
 
     render() {
         return (

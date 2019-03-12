@@ -18,6 +18,8 @@ import {
 import {AudioRecorder, AudioUtils} from 'react-native-audio';
 import Sound from 'react-native-sound';
 import Icon from "react-native-vector-icons/dist/MaterialIcons";
+import {insertAudio} from "../database/schemas";
+
 const uuid = require('uuid/v1');
 const { width, height } = Dimensions.get('window');
 
@@ -210,6 +212,7 @@ export default class AudioOperation extends React.Component<any, any> {
                 if (Platform.OS === 'ios') {
                     this._finishRecording(data.status === "OK", data.audioFileURL, data.audioFileSize);
                 }
+                insertAudio({uuid: uuid(), noteId: 1});
                 this.endRecording();
             };
         });
