@@ -18,13 +18,13 @@ import {
 import {AudioRecorder, AudioUtils} from 'react-native-audio';
 import Sound from 'react-native-sound';
 import Icon from "react-native-vector-icons/dist/MaterialIcons";
-import {insertAudio} from "../database/schemas";
+import {insertAudio, updateNote} from "../database/schemas";
 
 const uuid = require('uuid/v1');
 const { width, height } = Dimensions.get('window');
 
 
-export default class AudioOperation extends React.Component<any, any> {
+export default class AudioOperation extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -197,7 +197,6 @@ export default class AudioOperation extends React.Component<any, any> {
     componentDidMount() {
 
         AudioRecorder.checkAuthorizationStatus().then((isAuthorised) => {
-            console.log('喵喵喵', isAuthorised);
             this.setState({ hasPermission: isAuthorised });
             if (!isAuthorised) return;
 
@@ -212,13 +211,16 @@ export default class AudioOperation extends React.Component<any, any> {
                 if (Platform.OS === 'ios') {
                     this._finishRecording(data.status === "OK", data.audioFileURL, data.audioFileSize);
                 }
-                insertAudio({uuid: uuid(), noteId: 1});
-                this.endRecording();
+                const note = this.props.note;
+                const id = uuid();
+                insertAudio({uuid: id, noteId: this.props.note.id || ''});
+
+                this.endRecording(id);
             };
         });
     }
-    endRecording = () => {
-        this.props.endRecording('end');
+    endRecording = (id) => {
+        this.props.endRecording(id);
         console.log('end')
     };
 

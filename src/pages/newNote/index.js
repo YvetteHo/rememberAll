@@ -12,7 +12,7 @@ import Icon from 'react-native-vector-icons/dist/MaterialIcons';
 import Header from "../../components/header";
 import AudioOperation from "../../components/audioOperation";
 import {WhiteSpace, Card, Modal} from 'antd-mobile-rn';
-import {insertNote, updateNote, deleteNote} from "../../database/schemas";
+import {insertNote, updateNote, deleteNote, queryNotes} from "../../database/schemas";
 const uuid = require('uuid/v1');
 const {width, height} = Dimensions.get('window');
 
@@ -23,8 +23,14 @@ export default class NewNote extends React.Component{
             recording: false,
             change: false,
             modalVisible: true,
+            note: props.navigation.getParam('note'),
+            noteContent: Array.from(props.navigation.getParam('note').noteContent)
         };
         this.endRecording = this.endRecording.bind(this);
+    }
+
+    componentDidMount() {
+
     }
 
     micClicked = () => {
@@ -40,41 +46,96 @@ export default class NewNote extends React.Component{
 
     };
 
-    endRecording(e) {
-        console.log('结束了哦')
+    endRecording(id) {
+        console.log('结束了哦');
+
+        const oldNoteContent = this.state.noteContent;
+        oldNoteContent.push(id);
+
 
         this.setState({
-            recording: false
+            recording: false,
+            noteContent: oldNoteContent
         })
     };
 
-    save = () => {
-        console.log('保存');
-        Modal.prompt(
-            '保存笔记',
-            null,
-            name => {
-                console.log(`name: ${name}`);
-                insertNote({
-                    id: uuid(),
-                    name: name,
-                    time: new Date(),
-                    noteType: '',
-                    noteContent: [],
-                });
-                this.props.navigation.goBack()
-            },
-            'default',
-            '新日志',
-            ['请输入日志名']
-        );
+    goBack = () => {
+        this.props.navigation.goBack()
 
     };
 
+    save = () => {
+
+        const note = this.props.navigation.getParam('note', null);
+        const isNew = this.props.navigation.getParam('isNew', null);
+
+        console.log('保存', note);
+
+        console.log(this.state.noteContent);
+
+        if (isNew) {
+            Modal.prompt(
+                '保存笔记',
+                null,
+                name => {
+                    console.log(`name: ${name}`);
+                    insertNote({
+                        id: note.id,
+                        name: name,
+                        noteType: note.noteType,
+                        time: note.time,
+                        noteContent: this.state.noteContent
+                    });
+
+                    this.props.navigation.goBack()
+                },
+                'default',
+                '新日志',
+                ['请输入日志名']
+            );
+        } else {
+            updateNote({
+                id: note.id,
+                name: note.name,
+                noteType: note.noteType,
+                time: note.time,
+                noteContent: this.state.noteContent
+            });
+            this.props.navigation.goBack()
+        }
+
+    };
+
+    renderAudio = (element, index) => {
+        return <Card full key={index}>
+            <Card.Body>
+                <View style={{ height: 42 }}>
+                    <Text style={{ marginLeft: 16 }}>{element}</Text>
+                </View>
+            </Card.Body>
+        </Card>
+    };
+
+    showContent = () => {
+
+        return (
+            <View>
+                {this.state.noteContent.map((element, index) => {
+                       return this.renderAudio(element, index)
+
+                    }
+                )}
+            </View>
+        )
+
+    };
+
+
+
+
     render() {
         const { navigation } = this.props;
-        const item = navigation.getParam('item', null);
-        console.log('item', JSON.stringify(item));
+        const note = navigation.getParam('note', null);
 
         const footerButtons = [
             { text: 'Cancel', onPress: () => console.log('cancel') },
@@ -85,7 +146,7 @@ export default class NewNote extends React.Component{
                 {this.state.recording? <View style={styles.maskView}>
                 </View> : <View/>}
                 {this.state.recording? <View style={styles.floatView}>
-                    <AudioOperation endRecording={(e) => this.endRecording(e)}/>
+                    <AudioOperation endRecording={(e) => this.endRecording(e)} note={note ? note : null}/>
                 </View> : <View/>}
                     <SafeAreaView style={styles.container}>
                         <Header leftElement={
@@ -95,17 +156,18 @@ export default class NewNote extends React.Component{
                                 <Icon name="check" size={45} color="#FF5722"/>
                             </TouchableOpacity> :
                                 <TouchableOpacity
-                                onPress={() => this.props.navigation.goBack()}
+                                    onPress={this.goBack}
                                 style={{width: 45, marginLeft: 10}}>
                                 <Icon name="keyboard-arrow-left" size={45} color="#FF5722"/>
                             </TouchableOpacity>
 
                         }
-                                titleElement=  {item ? item.name : '新笔记'}
+                                titleElement=  {note ? note.name : '新笔记'}
                         />
 
                         <View style={styles.fullScreen}>
                             <ScrollView>
+                                {this.showContent()}
                                 <Text style={{fontSize: 100}}>咕咕咕咕咕咕</Text>
                             </ScrollView>
                             <View style={styles.footerContainer}>

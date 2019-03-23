@@ -4,9 +4,10 @@ import Svg, {Path, G, Circle} from 'react-native-svg';
 import Icon from 'react-native-vector-icons/dist/MaterialIcons';
 import {Drawer, Button, WhiteSpace, Card} from 'antd-mobile-rn';
 import Header from "../../components/header";
-import {insertNote, NoteSchema, AudioSchema, queryNotes} from "../../database/schemas";
+import {insertNote, NoteSchema, AudioSchema, queryNotes, deleteNote, rememberAllRealm} from "../../database/schemas";
 import { UltimateListView, UltimateRefreshView } from 'react-native-ultimate-listview';
 
+const uuid = require('uuid/v1');
 const { width, height } = Dimensions.get('window');
 
 let FlatListItem = props => {
@@ -26,6 +27,8 @@ const headerShadow = {
     y: 1.5,
 };
 
+
+
 export default class HomePage extends React.Component {
     constructor(props) {
         super(props);
@@ -36,16 +39,26 @@ export default class HomePage extends React.Component {
             openNote: true,
         };
         this.openNote = this.openNote.bind(this);
+
     }
     componentDidMount() {
         this.reloadData();
+
     }
+
+
 
     reloadData = () => {
         queryNotes().then((notes) => {
             this.setState({
-                notes: Array.from(notes),
+                notes: notes,
             });
+
+            rememberAllRealm.addListener('change', () => {
+                console.log('change');
+                this.reloadData()
+            });
+
 
         }).catch((error) => {
             this.setState({
@@ -54,48 +67,62 @@ export default class HomePage extends React.Component {
         });
     };
 
-    openNote = (item) => {
+    openNote = (note) => {
         this.setState({
             openNote: true
         });
-        console.log('item', item);
-        if (item) {
+        console.log('打开', note);
+        if (note) {
+
             this.props.navigation.navigate('NewNote', {
-                item: item
+                note: note,
+                isNew: false,
             })
         } else {
-            this.props.navigation.navigate('NewNote')
-        }
+            const newNote = {
+                id: uuid(),
+                name: '',
+                time: new Date(),
+                noteType: '',
+                noteContent: [],
+            };
 
+            console.log('newNote', newNote);
+
+            this.props.navigation.navigate('NewNote', {
+                note: newNote,
+                isNew: true
+            })
+        }
 
     };
 
     onOpenChange = (isOpen) => {
         /* tslint:disable: no-console */
-        console.log('是否打开了 Drawer', isOpen.toString());
     };
 
     convertDate = (date) => {
         return date.getFullYear() + '-' + date.getMonth() + '-' + date.getDay()
     };
 
-    renderItem = (item) => {
-        console.log(item);
+    renderItem = (note) => {
+
 
         return (
-            <TouchableWithoutFeedback onPress={(item) => this.openNote(item)}>
+            <TouchableWithoutFeedback onPress={() => this.openNote(note)}>
             <Card full >
                 <Card.Body>
                     <View style={{ height: 42 }}>
-                        <Text style={{ marginLeft: 16 }}>{item.id}</Text>
+                        <Text style={{ marginLeft: 16 }}>{note.id}</Text>
                     </View>
                 </Card.Body>
-                <Card.Footer content={this.convertDate(item.time)} extra="footer extra content" />
+                <Card.Footer content={this.convertDate(note.time)} extra="footer extra content" />
             </Card>
             </TouchableWithoutFeedback>
         )
 
     };
+
 
 
     _keyExtractor = (item) => item.id;
@@ -107,7 +134,6 @@ export default class HomePage extends React.Component {
                 <Text>你是狗吧</Text>
             </ScrollView>
         );
-        console.log('notes', this.state.notes);
 
         return (
             <SafeAreaView style={{flex: 1, backgroundColor: '#fff'}}>
@@ -146,7 +172,7 @@ export default class HomePage extends React.Component {
                     </View>
                     <View style={{position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center'}}>
 
-                        <TouchableOpacity onPress={this.openNote} style={styles.button}>
+                        <TouchableOpacity onPress={() => this.openNote(null)} style={styles.button}>
                             <Icon name="add-circle" size={64} color="#FF5722" title="Go to Details"/>
                         </TouchableOpacity>
 

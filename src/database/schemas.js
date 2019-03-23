@@ -3,17 +3,11 @@ import Realm from 'realm';
 const NOTE_SCHEMA = "NoteList";
 const AUDIO_SCHEMA = "AudioList";
 
-const content = {
-    type: 'string',
-    uuid: 'string',
-};
-class Content {
-    constructor(name, primaryKey, properties) {
-        this.name = name;
-        this.primaryKey = primaryKey;
-        this.properties = properties;
-    }
-}
+
+
+
+export let rememberAllRealm;
+
 export const NoteSchema = {
     name: NOTE_SCHEMA,
     primaryKey: 'id',
@@ -31,7 +25,7 @@ export const AudioSchema = {
     primaryKey: 'uuid',
     properties: {
         uuid: 'string',
-        noteId: 'int',
+        noteId: 'string',
     }
 };
 
@@ -39,6 +33,11 @@ const databaseOptions = {
     path: 'rememberAll.realm',
     schema: [NoteSchema, AudioSchema]
 };
+
+
+
+
+
 
 export const insertNote = newNote => new Promise((resolve, reject) => {
     Realm.open(databaseOptions).then(realm => {
@@ -53,6 +52,8 @@ export const updateNote = note => new Promise((resolve, reject) => {
     Realm.open(databaseOptions).then(realm => {
         realm.write(() => {
             let updatingNote = realm.objectForPrimaryKey(NOTE_SCHEMA, note.id);
+            updatingNote.name = note.name;
+            updatingNote.time = note.time;
             updatingNote.noteType = note.noteType;
             updatingNote.noteContent = note.noteContent;
             resolve();
@@ -90,17 +91,14 @@ export const deleteAudio = audioId => new Promise((resolve, reject) => {
     }).catch((error) => reject(error));
 });
 
-export const queryNotes = (start, end) => new Promise((resolve, reject) => {
+export const queryNotes = () => new Promise((resolve, reject) => {
     Realm.open(databaseOptions).then(realm => {
-        if (start !== null && end !== null) {
-            let allNotes = realm.objects(NOTE_SCHEMA).slice(start, end);
-            resolve(allNotes);
-        } else {
+            rememberAllRealm = realm;
             let allNotes = realm.objects(NOTE_SCHEMA);
             resolve(allNotes);
-        }
 
     }).catch((error) => {
         reject(error);
     });
 });
+
