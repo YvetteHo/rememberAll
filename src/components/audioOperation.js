@@ -213,7 +213,7 @@ export default class AudioOperation extends React.Component {
                 }
                 const note = this.props.note;
                 const id = uuid();
-                insertAudio({uuid: id, noteId: this.props.note.id || ''});
+                insertAudio({uuid: id, noteId: this.props.note.id || ''}, true);
 
                 this.endRecording(id);
             };

@@ -4,7 +4,7 @@ import Svg, {Path, G, Circle} from 'react-native-svg';
 import Icon from 'react-native-vector-icons/dist/MaterialIcons';
 import {Drawer, Button, WhiteSpace, Card} from 'antd-mobile-rn';
 import Header from "../../components/header";
-import {insertNote, NoteSchema, AudioSchema, queryNotes, deleteNote, rememberAllRealm} from "../../database/schemas";
+import {insertNote, NoteSchema, AudioSchema, queryNotes, deleteNote, rememberAllRealm, beginTrans, commitTrans, cancelTrans} from "../../database/schemas";
 import { UltimateListView, UltimateRefreshView } from 'react-native-ultimate-listview';
 
 const uuid = require('uuid/v1');
@@ -55,8 +55,10 @@ export default class HomePage extends React.Component {
             });
 
             rememberAllRealm.addListener('change', () => {
-                console.log('change');
-                this.reloadData()
+                if (! rememberAllRealm.isInTransaction) {
+                    console.log('change');
+                    this.reloadData()
+                }
             });
 
 
@@ -68,6 +70,8 @@ export default class HomePage extends React.Component {
     };
 
     openNote = (note) => {
+
+        beginTrans();
         this.setState({
             openNote: true
         });
@@ -86,6 +90,8 @@ export default class HomePage extends React.Component {
                 noteType: '',
                 noteContent: [],
             };
+
+            insertNote(newNote, true);
 
             console.log('newNote', newNote);
 

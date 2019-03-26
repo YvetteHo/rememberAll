@@ -12,7 +12,18 @@ import Icon from 'react-native-vector-icons/dist/MaterialIcons';
 import Header from "../../components/header";
 import AudioOperation from "../../components/audioOperation";
 import {WhiteSpace, Card, Modal} from 'antd-mobile-rn';
-import {insertNote, updateNote, deleteNote, queryNotes} from "../../database/schemas";
+import {
+    insertNote,
+    updateNote,
+    deleteNote,
+    queryNotes,
+    deleteAudio,
+    rememberAllRealm,
+    beginTrans,
+    cancelTrans,
+    commitTrans,
+} from "../../database/schemas";
+import Swipeout from 'react-native-swipeout';
 const uuid = require('uuid/v1');
 const {width, height} = Dimensions.get('window');
 
@@ -24,7 +35,7 @@ export default class NewNote extends React.Component{
             change: false,
             modalVisible: true,
             note: props.navigation.getParam('note'),
-            noteContent: Array.from(props.navigation.getParam('note').noteContent)
+            noteContent: Array.from(props.navigation.getParam('note').noteContent),
         };
         this.endRecording = this.endRecording.bind(this);
     }
@@ -79,14 +90,15 @@ export default class NewNote extends React.Component{
                 null,
                 name => {
                     console.log(`name: ${name}`);
-                    insertNote({
+                    updateNote({
                         id: note.id,
                         name: name,
                         noteType: note.noteType,
                         time: note.time,
                         noteContent: this.state.noteContent
-                    });
-
+                    }, true);
+                    console.log('isInTrans', rememberAllRealm.isInTransaction);
+                    commitTrans();
                     this.props.navigation.goBack()
                 },
                 'default',
@@ -100,20 +112,50 @@ export default class NewNote extends React.Component{
                 noteType: note.noteType,
                 time: note.time,
                 noteContent: this.state.noteContent
-            });
+            }, true);
+            commitTrans();
             this.props.navigation.goBack()
         }
 
     };
 
+
     renderAudio = (element, index) => {
-        return <Card full key={index}>
+        const swipeoutBtns = [
+            {
+                text: '删除',
+                onPress: () => {
+                    deleteAudio(element, true)
+                    const oldNoteContent = this.state.noteContent;
+                    const index = oldNoteContent.indexOf(element);
+                    if (index > -1) {
+                        oldNoteContent.splice(index, 1);
+                    }
+                    this.setState({
+                        noteContent: oldNoteContent,
+                        change: true
+                    });
+
+                }
+            }
+        ];
+
+        return <Swipeout right={swipeoutBtns} key={index}>
+        <Card full key={index}>
             <Card.Body>
                 <View style={{ height: 42 }}>
+                    <View style={styles.center}>
+                        <TouchableOpacity
+                            onPress={this.pauseClicked}>
+                            <Icon name="play-arrow" size={32} color="#FF5722"/>
+                        </TouchableOpacity>
+                    </View>
+
                     <Text style={{ marginLeft: 16 }}>{element}</Text>
                 </View>
             </Card.Body>
         </Card>
+        </Swipeout>
     };
 
     showContent = () => {
@@ -241,5 +283,11 @@ const styles = StyleSheet.create({
     footerRight: {
         marginRight: 5,
         flex: 1,
+    },
+    center: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        flex: 1,
+
     }
 });
