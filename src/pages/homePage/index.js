@@ -2,20 +2,24 @@ import React from 'react';
 import {SafeAreaView, Platform, Animated, Text, View, Image, TouchableOpacity, StyleSheet, ScrollView, Dimensions, TouchableHighlight, FlatList, SectionList, TouchableWithoutFeedback} from 'react-native';
 import Svg, {Path, G, Circle} from 'react-native-svg';
 import Icon from 'react-native-vector-icons/dist/MaterialIcons';
-import {Drawer, Button, WhiteSpace, Card} from 'antd-mobile-rn';
+import {Drawer, Button, WhiteSpace, Card, SwipeAction} from 'antd-mobile-rn';
 import Header from "../../components/header";
-import {insertNote, NoteSchema, AudioSchema, queryNotes, deleteNote, rememberAllRealm, beginTrans, commitTrans, cancelTrans} from "../../database/schemas";
-import { UltimateListView, UltimateRefreshView } from 'react-native-ultimate-listview';
-
+import {
+    insertNote,
+    NoteSchema,
+    AudioSchema,
+    queryNotes,
+    deleteNote,
+    rememberAllRealm,
+    beginTrans,
+    commitTrans,
+    cancelTrans,
+    deleteAudio
+} from "../../database/schemas";
+const Spinner = require('react-native-spinkit');
 const uuid = require('uuid/v1');
 const { width, height } = Dimensions.get('window');
 
-let FlatListItem = props => {
-    return (
-        <Text>你是狗吧</Text>
-    )
-};
-// const SafeAreaView = withSafeArea(View, 'margin', 'all');
 const headerShadow = {
     width: width,
     height: 45,
@@ -27,8 +31,6 @@ const headerShadow = {
     y: 1.5,
 };
 
-
-
 export default class HomePage extends React.Component {
     constructor(props) {
         super(props);
@@ -37,30 +39,38 @@ export default class HomePage extends React.Component {
             drawerOpen: true,
             notes: [],
             openNote: true,
+            realmObject: null,
+            isLoading: false,
         };
         this.openNote = this.openNote.bind(this);
 
     }
     componentDidMount() {
-        this.reloadData();
-
+        this.setState({
+            isLoading: false
+        });
+        this.reloadData()
+    }
+    componentWillUnmount() {
+        if (rememberAllRealm.isInTransaction) {
+            cancelTrans();
+        }
     }
 
 
-
     reloadData = () => {
-        queryNotes().then((notes) => {
+        queryNotes(this.state.realmObject).then((notes) => {
             this.setState({
                 notes: notes,
+                realmObject: rememberAllRealm,
+                isLoading: false
             });
 
             rememberAllRealm.addListener('change', () => {
                 if (! rememberAllRealm.isInTransaction) {
-                    console.log('change');
                     this.reloadData()
                 }
             });
-
 
         }).catch((error) => {
             this.setState({
@@ -70,12 +80,12 @@ export default class HomePage extends React.Component {
     };
 
     openNote = (note) => {
-
-        beginTrans();
         this.setState({
             openNote: true
         });
-        console.log('打开', note);
+
+        beginTrans();
+
         if (note) {
 
             this.props.navigation.navigate('NewNote', {
@@ -90,10 +100,7 @@ export default class HomePage extends React.Component {
                 noteType: '',
                 noteContent: [],
             };
-
-            insertNote(newNote, true);
-
-            console.log('newNote', newNote);
+            insertNote(newNote);
 
             this.props.navigation.navigate('NewNote', {
                 note: newNote,
@@ -107,29 +114,49 @@ export default class HomePage extends React.Component {
         /* tslint:disable: no-console */
     };
 
-    convertDate = (date) => {
-        return date.getFullYear() + '-' + date.getMonth() + '-' + date.getDay()
-    };
+    renderItem = (note, index) => {
+        const swipeOutButtons = [
+            {
+                text: '删除',
+                onPress: () => {
+                    Array.from(note.noteContent).forEach((element) => {
+                        if (element.slice(0, 9) === '*#audio#*') {
+                            deleteAudio(element);
+                        }
+                    });
+                    deleteNote(note.id);
+                },
+                style: {color: 'white'},
+            }, {
+                text: '重命名',
+                style: {backgroundColor: '#424242', color: 'white'},
+                onPress: () => {
+                }
+            },{
+                text: '分组',
+                style: {backgroundColor: '#FF5722', color: 'white'},
+                onPress: () => {
 
-    renderItem = (note) => {
-
+                }
+            }
+        ];
 
         return (
+            <SwipeAction right={swipeOutButtons} key={index}>
             <TouchableWithoutFeedback onPress={() => this.openNote(note)}>
-            <Card full >
+            <Card full key={index}>
                 <Card.Body>
                     <View style={{ height: 42 }}>
                         <Text style={{ marginLeft: 16 }}>{note.id}</Text>
                     </View>
                 </Card.Body>
-                <Card.Footer content={this.convertDate(note.time)} extra="footer extra content" />
+                <Card.Footer content={note.time.toLocaleString()} extra="footer extra content" />
             </Card>
             </TouchableWithoutFeedback>
+            </SwipeAction>
         )
 
     };
-
-
 
     _keyExtractor = (item) => item.id;
 
@@ -142,7 +169,15 @@ export default class HomePage extends React.Component {
         );
 
         return (
+            <View style={styles.container}>
+                {this.state.isLoading ? <View style={styles.maskView}/> : <View/>}
+                {this.state.isLoading ?
+                    <View style={styles.floatView}>
+                    <Spinner style={styles.spinner} isVisible={true} size={100} type='Circle' color='#FF5722'/>
+                    </View>: <View/>}
+
             <SafeAreaView style={{flex: 1, backgroundColor: '#fff'}}>
+
                 <Drawer sidebar={sidebar} position='left'
                         open={false} drawerRef={el => (this.drawer = el)}
                         onOpenChange={this.onOpenChange}
@@ -161,7 +196,6 @@ export default class HomePage extends React.Component {
                             renderItem={({item}) => this.renderItem(item)}
                             keyExtractor={this._keyExtractor}
                         />
-
                     </ScrollView>
                     <View style={{position: 'absolute', left: 0, right: 0, bottom: 6, alignItems: 'center'}}>
                         <Svg
@@ -186,6 +220,7 @@ export default class HomePage extends React.Component {
 
                 </Drawer>
             </SafeAreaView>
+            </View>
 
         );
     }
@@ -220,6 +255,31 @@ const styles = StyleSheet.create({
         margin: 10,
         color: '#ffffff',
         backgroundColor: 'transparent',
+    },
+    spinner: {
+        marginBottom: 50
+    },
+    maskView: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flex: 1,
+        zIndex: 4,
+    },
+    floatView: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flex: 1,
+        zIndex: 4,
     },
 
 });

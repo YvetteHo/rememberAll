@@ -23,6 +23,29 @@ import {insertAudio, updateNote} from "../database/schemas";
 const uuid = require('uuid/v1');
 const { width, height } = Dimensions.get('window');
 
+async function requestAudioPermission() {
+    try {
+        const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+            {
+                title: '请求访问麦克风',
+                message:
+                    '打开您的麦克风' +
+                    '以便录音',
+                buttonNeutral: '稍后再问',
+                buttonNegative: '取消',
+                buttonPositive: '好的',
+            },
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+            console.log('您可以使用麦克风了');
+        } else {
+            console.log('拒绝使用');
+        }
+    } catch (err) {
+        console.warn(err);
+    }
+}
 
 export default class AudioOperation extends React.Component {
     constructor(props) {
@@ -146,7 +169,7 @@ export default class AudioOperation extends React.Component {
         // These timeouts are a hacky workaround for some issues with react-native-sound.
         // See https://github.com/zmxv/react-native-sound/issues/89.
         setTimeout(() => {
-            var sound = new Sound(this.state.audioPath, '', (error) => {
+            let sound = new Sound(this.state.audioPath, '', (error) => {
                 if (error) {
                     console.log('failed to load the sound', error);
                 }
@@ -195,6 +218,13 @@ export default class AudioOperation extends React.Component {
     }
 
     componentDidMount() {
+        if(Platform.OS === 'android') {
+            requestAudioPermission().then(
+
+            );
+        }
+
+
 
         AudioRecorder.checkAuthorizationStatus().then((isAuthorised) => {
             this.setState({ hasPermission: isAuthorised });
@@ -211,9 +241,8 @@ export default class AudioOperation extends React.Component {
                 if (Platform.OS === 'ios') {
                     this._finishRecording(data.status === "OK", data.audioFileURL, data.audioFileSize);
                 }
-                const note = this.props.note;
-                const id = uuid();
-                insertAudio({uuid: id, noteId: this.props.note.id || ''}, true);
+                const id = '*#audio#*' + uuid();
+                insertAudio({uuid: id, noteId: this.props.note.id || ''});
 
                 this.endRecording(id);
             };

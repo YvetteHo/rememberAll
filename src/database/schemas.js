@@ -1,10 +1,6 @@
 import Realm from 'realm';
-
 const NOTE_SCHEMA = "NoteList";
 const AUDIO_SCHEMA = "AudioList";
-
-
-
 
 export let rememberAllRealm;
 
@@ -34,33 +30,46 @@ const databaseOptions = {
     schema: [NoteSchema, AudioSchema]
 };
 
-export const insertNote = (newNote, isInTrans) => new Promise((resolve, reject) => {
-    Realm.open(databaseOptions).then(realm => {
-        if (isInTrans) {
-            realm.create(NOTE_SCHEMA, newNote);
+export const queryNotes = (realmObject) => new Promise((resolve, reject) => {
+    if (realmObject) {
+        rememberAllRealm = realmObject;
+        let allNotes = realmObject.objects(NOTE_SCHEMA);
+        resolve(allNotes)
+    }
+    Realm.open(databaseOptions).then((realm) => {
+        rememberAllRealm = realm;
+        let allNotes = realm.objects(NOTE_SCHEMA);
+        resolve(allNotes)
+    }).catch(
+
+    )
+});
+
+export const insertNote = (newNote) => new Promise((resolve, reject) => {
+
+        if (rememberAllRealm.isInTransaction) {
+            rememberAllRealm.create(NOTE_SCHEMA, newNote);
             resolve(newNote);
         } else {
-            realm.write(() => {
-                realm.create(NOTE_SCHEMA, newNote);
+            rememberAllRealm.write(() => {
+                rememberAllRealm.create(NOTE_SCHEMA, newNote);
                 resolve(newNote);
             });
         }
-
-    }).catch((error) => reject(error));
 });
 
-export const updateNote = (note, isInTrans) => new Promise((resolve, reject) => {
-    Realm.open(databaseOptions).then(realm => {
-        if (isInTrans) {
-            let updatingNote = realm.objectForPrimaryKey(NOTE_SCHEMA, note.id);
+export const updateNote = (note) => new Promise((resolve, reject) => {
+
+        if (rememberAllRealm.isInTransaction) {
+            let updatingNote = rememberAllRealm.objectForPrimaryKey(NOTE_SCHEMA, note.id);
             updatingNote.name = note.name;
             updatingNote.time = note.time;
             updatingNote.noteType = note.noteType;
             updatingNote.noteContent = note.noteContent;
             resolve();
         } else {
-            realm.write(() => {
-                let updatingNote = realm.objectForPrimaryKey(NOTE_SCHEMA, note.id);
+            rememberAllRealm.write(() => {
+                let updatingNote = rememberAllRealm.objectForPrimaryKey(NOTE_SCHEMA, note.id);
                 updatingNote.name = note.name;
                 updatingNote.time = note.time;
                 updatingNote.noteType = note.noteType;
@@ -69,101 +78,71 @@ export const updateNote = (note, isInTrans) => new Promise((resolve, reject) => 
             })
         }
 
-    }).catch((error) => reject(error));
 });
 
-export const deleteNote = (noteId, isInTrans) => new Promise((resolve, reject) => {
-    Realm.open(databaseOptions).then(realm => {
-        if (isInTrans) {
-            let deletingNote = realm.objectForPrimaryKey(AUDIO_SCHEMA, noteId);
-            realm.delete(deletingNote);
+export const deleteNote = (noteId) => new Promise((resolve, reject) => {
+        if (rememberAllRealm.isInTransaction) {
+            let deletingNote = rememberAllRealm.objectForPrimaryKey(NOTE_SCHEMA, noteId);
+            console.log('删除', deletingNote);
+            rememberAllRealm.delete(deletingNote);
             resolve();
         } else {
-            realm.write(() => {
-                let deletingNote = realm.objectForPrimaryKey(AUDIO_SCHEMA, noteId);
-                realm.delete(deletingNote);
+            rememberAllRealm.write(() => {
+                let deletingNote = rememberAllRealm.objectForPrimaryKey(NOTE_SCHEMA, noteId);
+                rememberAllRealm.delete(deletingNote);
                 resolve();
             })
         }
-    }).catch((error) => reject(error));
+
 });
 
-export const insertAudio = (newAudio, isInTrans) => new Promise((resolve, reject) => {
-    Realm.open(databaseOptions).then(realm => {
-        if (isInTrans) {
-            realm.create(AUDIO_SCHEMA, newAudio);
+export const insertAudio = (newAudio) => new Promise((resolve, reject) => {
+
+        if (rememberAllRealm.isInTransaction) {
+            rememberAllRealm.create(AUDIO_SCHEMA, newAudio);
             resolve(newAudio);
         } else {
-            realm.write(() => {
-                realm.create(AUDIO_SCHEMA, newAudio);
+            rememberAllRealm.write(() => {
+                rememberAllRealm.create(AUDIO_SCHEMA, newAudio);
                 resolve(newAudio);
             });
         }
 
-        console.log('audio数据库存在', realm.path);
-    }).catch((error) => reject(error));
+        console.log('audio数据库存在', rememberAllRealm.path);
 });
 
-export const deleteAudio = (audioId, isInTrans) => new Promise((resolve, reject) => {
-    Realm.open(databaseOptions).then(realm => {
-        if (isInTrans) {
-            let deletingAudio = realm.objectForPrimaryKey(AUDIO_SCHEMA, audioId);
+export const deleteAudio = (audioId) => new Promise((resolve, reject) => {
+
+        if (rememberAllRealm.isInTransaction) {
+            let deletingAudio = rememberAllRealm.objectForPrimaryKey(AUDIO_SCHEMA, audioId);
             console.log('删除', deletingAudio);
-            realm.delete(deletingAudio);
+            rememberAllRealm.delete(deletingAudio);
             resolve();
         } else {
-            realm.write(() => {
-                let deletingAudio = realm.objectForPrimaryKey(AUDIO_SCHEMA, audioId);
+            rememberAllRealm.write(() => {
+                let deletingAudio = rememberAllRealm.objectForPrimaryKey(AUDIO_SCHEMA, audioId);
                 console.log('删除', deletingAudio);
-                realm.delete(deletingAudio);
+                rememberAllRealm.delete(deletingAudio);
                 resolve();
             })
         }
 
-    }).catch((error) => reject(error));
+
 });
-
-export const queryNotes = () => new Promise((resolve, reject) => {
-    Realm.open(databaseOptions).then(realm => {
-        rememberAllRealm = realm;
-        let allNotes = realm.objects(NOTE_SCHEMA);
-        resolve(allNotes);
-
-    }).catch((error) => {
-        reject(error);
-    });
-});
-
-
-
-
 
 export const beginTrans = () => new Promise((resolve, reject) => {
-    Realm.open(databaseOptions).then(realm => {
-        if (! realm.isInTransaction) {
-            realm.beginTransaction()
+        if (! rememberAllRealm.isInTransaction) {
+            rememberAllRealm.beginTransaction()
         }
-    }).catch((error) => {
-        reject(error);
-    });
 });
 
 export const cancelTrans = () => new Promise((resolve, reject) => {
-    Realm.open(databaseOptions).then(realm => {
-        realm.cancelTransaction()
 
-    }).catch((error) => {
-        reject(error);
-    });
+        rememberAllRealm.cancelTransaction()
 });
 
 export const commitTrans = () => new Promise((resolve, reject) => {
-    Realm.open(databaseOptions).then(realm => {
-        realm.commitTransaction()
-
-    }).catch((error) => {
-        reject(error);
-    });
+        rememberAllRealm.commitTransaction()
 });
 
 
