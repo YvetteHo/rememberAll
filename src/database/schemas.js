@@ -1,4 +1,5 @@
 import Realm from 'realm';
+
 const NOTE_SCHEMA = "NoteList";
 const AUDIO_SCHEMA = "AudioList";
 
@@ -47,102 +48,106 @@ export const queryNotes = (realmObject) => new Promise((resolve, reject) => {
 
 export const insertNote = (newNote) => new Promise((resolve, reject) => {
 
-        if (rememberAllRealm.isInTransaction) {
+    if (rememberAllRealm.isInTransaction) {
+        rememberAllRealm.create(NOTE_SCHEMA, newNote);
+        resolve(newNote);
+    } else {
+        rememberAllRealm.write(() => {
             rememberAllRealm.create(NOTE_SCHEMA, newNote);
             resolve(newNote);
-        } else {
-            rememberAllRealm.write(() => {
-                rememberAllRealm.create(NOTE_SCHEMA, newNote);
-                resolve(newNote);
-            });
-        }
+        });
+    }
 });
 
 export const updateNote = (note) => new Promise((resolve, reject) => {
 
-        if (rememberAllRealm.isInTransaction) {
+    if (rememberAllRealm.isInTransaction) {
+        let updatingNote = rememberAllRealm.objectForPrimaryKey(NOTE_SCHEMA, note.id);
+        updatingNote.name = note.name;
+        updatingNote.time = note.time;
+        updatingNote.noteType = note.noteType;
+        updatingNote.noteContent = note.noteContent;
+        resolve();
+    } else {
+        rememberAllRealm.write(() => {
             let updatingNote = rememberAllRealm.objectForPrimaryKey(NOTE_SCHEMA, note.id);
             updatingNote.name = note.name;
             updatingNote.time = note.time;
             updatingNote.noteType = note.noteType;
             updatingNote.noteContent = note.noteContent;
             resolve();
-        } else {
-            rememberAllRealm.write(() => {
-                let updatingNote = rememberAllRealm.objectForPrimaryKey(NOTE_SCHEMA, note.id);
-                updatingNote.name = note.name;
-                updatingNote.time = note.time;
-                updatingNote.noteType = note.noteType;
-                updatingNote.noteContent = note.noteContent;
-                resolve();
-            })
-        }
+        })
+    }
 
 });
 
 export const deleteNote = (noteId) => new Promise((resolve, reject) => {
-        if (rememberAllRealm.isInTransaction) {
+    if (rememberAllRealm.isInTransaction) {
+        let deletingNote = rememberAllRealm.objectForPrimaryKey(NOTE_SCHEMA, noteId);
+        console.log('删除', deletingNote);
+        rememberAllRealm.delete(deletingNote);
+        resolve();
+    } else {
+        rememberAllRealm.write(() => {
             let deletingNote = rememberAllRealm.objectForPrimaryKey(NOTE_SCHEMA, noteId);
-            console.log('删除', deletingNote);
             rememberAllRealm.delete(deletingNote);
             resolve();
-        } else {
-            rememberAllRealm.write(() => {
-                let deletingNote = rememberAllRealm.objectForPrimaryKey(NOTE_SCHEMA, noteId);
-                rememberAllRealm.delete(deletingNote);
-                resolve();
-            })
-        }
+        })
+    }
 
 });
 
 export const insertAudio = (newAudio) => new Promise((resolve, reject) => {
 
-        if (rememberAllRealm.isInTransaction) {
+    if (rememberAllRealm.isInTransaction) {
+        rememberAllRealm.create(AUDIO_SCHEMA, newAudio);
+        resolve(newAudio);
+    } else {
+        rememberAllRealm.write(() => {
             rememberAllRealm.create(AUDIO_SCHEMA, newAudio);
             resolve(newAudio);
-        } else {
-            rememberAllRealm.write(() => {
-                rememberAllRealm.create(AUDIO_SCHEMA, newAudio);
-                resolve(newAudio);
-            });
-        }
+        });
+    }
 
-        console.log('audio数据库存在', rememberAllRealm.path);
+    console.log('audio数据库存在', rememberAllRealm.path);
 });
 
 export const deleteAudio = (audioId) => new Promise((resolve, reject) => {
 
-        if (rememberAllRealm.isInTransaction) {
+    if (rememberAllRealm.isInTransaction) {
+        let deletingAudio = rememberAllRealm.objectForPrimaryKey(AUDIO_SCHEMA, audioId);
+        console.log('删除', deletingAudio);
+        rememberAllRealm.delete(deletingAudio);
+        resolve();
+    } else {
+        rememberAllRealm.write(() => {
             let deletingAudio = rememberAllRealm.objectForPrimaryKey(AUDIO_SCHEMA, audioId);
             console.log('删除', deletingAudio);
             rememberAllRealm.delete(deletingAudio);
             resolve();
-        } else {
-            rememberAllRealm.write(() => {
-                let deletingAudio = rememberAllRealm.objectForPrimaryKey(AUDIO_SCHEMA, audioId);
-                console.log('删除', deletingAudio);
-                rememberAllRealm.delete(deletingAudio);
-                resolve();
-            })
-        }
+        })
+    }
 
 
 });
 
 export const beginTrans = () => new Promise((resolve, reject) => {
-        if (! rememberAllRealm.isInTransaction) {
-            rememberAllRealm.beginTransaction()
-        }
+    if (!rememberAllRealm.isInTransaction) {
+        rememberAllRealm.beginTransaction();
+        resolve();
+    }
 });
 
 export const cancelTrans = () => new Promise((resolve, reject) => {
 
-        rememberAllRealm.cancelTransaction()
+    rememberAllRealm.cancelTransaction();
+    resolve();
+
 });
 
 export const commitTrans = () => new Promise((resolve, reject) => {
-        rememberAllRealm.commitTransaction()
+    rememberAllRealm.commitTransaction();
+    resolve()
 });
 
 

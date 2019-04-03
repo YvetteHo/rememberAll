@@ -16,17 +16,19 @@ import Icon from 'react-native-vector-icons/dist/MaterialIcons';
 import Header from "../../components/header";
 import AudioOperation from "../../components/audioOperation";
 import {AudioUtils} from 'react-native-audio';
+import AudioPlayer from "../../components/audioPlayer";
+
 
 import {WhiteSpace, Card, Modal, SwipeAction, TextareaItem} from 'antd-mobile-rn';
 import {
     updateNote,
     deleteAudio,
-    rememberAllRealm,
     cancelTrans,
     commitTrans,
 } from "../../database/schemas";
 import Sound from "react-native-sound";
-import debounce from 'lodash/debounce';
+
+const Spinner = require('react-native-spinkit');
 
 const uuid = require('uuid/v1');
 const {width, screenHeight} = Dimensions.get('window');
@@ -43,6 +45,7 @@ export default class NewNote extends React.Component {
             newValue: '',
             height: 40,
             value: '',
+            isLoading: false,
         };
         this.endRecording = this.endRecording.bind(this);
     }
@@ -99,7 +102,7 @@ export default class NewNote extends React.Component {
     updateText = (index) => {
         const oldNoteContent = this.state.noteContent;
         if (index) {
-            oldNoteContent.splice(index,1);
+            oldNoteContent.splice(index, 1);
         } else {
             if (this.state.newValue !== '') {
                 oldNoteContent.push(this.state.newValue);
@@ -132,18 +135,62 @@ export default class NewNote extends React.Component {
     };
 
     goBack = () => {
-        this.props.navigation.goBack()
+        cancelTrans().then(() => {
+            console.log('cancelTrans');
+            this.props.navigation.goBack()
+        });
+    };
+
+    save = (name) => {
+        const note = this.props.navigation.getParam('note', null);
+
+        console.log(`name: ${name}`);
+        this.setState({
+            isLoading: true
+        });
+        updateNote({
+            id: note.id,
+            name: name || note.name,
+            noteType: note.noteType,
+            time: note.time,
+            noteContent: this.state.noteContent
+        }).then(() => {
+            commitTrans().then(() => {
+                this.setState({
+                    isLoading: false
+                });
+                this.props.navigation.goBack()
+            }).catch(() => {
+                this.setState({
+                    isLoading: false
+                });
+            });
+
+        }).catch(() => {
+            cancelTrans().then(() => {
+                this.setState({
+                    isLoading: false
+                });
+            });
+        });
+    };
+
+    cancel = () => {
+        this.setState({
+            isLoading: true
+        });
+        cancelTrans().then(() => {
+            this.setState({
+                isLoading: false
+            });
+            this.props.navigation.goBack()
+        });
 
     };
 
-    save = () => {
+    clickSave = () => {
 
-        const note = this.props.navigation.getParam('note', null);
         const isNew = this.props.navigation.getParam('isNew', null);
-
-        console.log(this.state.newValue);
-
-        console.log('保存', note);
 
         console.log(this.state.noteContent);
         if (this.state.newValue.replace(/(\s*$)/g, "") !== "") {
@@ -157,28 +204,12 @@ export default class NewNote extends React.Component {
                 [
                     {
                         text: '不保存',
-                        onPress: () => {
-                            cancelTrans();
-                            this.props.navigation.goBack()
-                        },
+                        onPress: this.cancel,
                         style: 'cancel',
                     },
                     {
                         text: '保存',
-                        onPress: name => {
-                            console.log(`name: ${name}`);
-                            updateNote({
-                                id: note.id,
-                                name: name,
-                                noteType: note.noteType,
-                                time: note.time,
-                                noteContent: this.state.noteContent
-                            });
-                            console.log('isInTrans', rememberAllRealm.isInTransaction);
-                            commitTrans();
-
-                            this.props.navigation.goBack()
-                        }
+                        onPress: name => this.save(name)
                     }
 
                 ],
@@ -187,30 +218,18 @@ export default class NewNote extends React.Component {
                 ['请输入日志名']
             );
         } else {
+
             Modal.alert('是否保存笔记', null, [
                 {
                     text: '不保存',
-                    onPress: () => {
-                        cancelTrans();
-                        this.props.navigation.goBack();
-                    },
+                    onPress: this.cancel,
                     style: 'cancel',
                 },
                 {
                     text: '保存',
-                    onPress: () => {
-                        updateNote({
-                            id: note.id,
-                            name: note.name,
-                            noteType: note.noteType,
-                            time: note.time,
-                            noteContent: this.state.noteContent
-                        });
-                        commitTrans();
-
-                        this.props.navigation.goBack()
-                    }
-                }]);
+                    onPress: this.save
+                }]
+            );
         }
 
     };
@@ -220,16 +239,19 @@ export default class NewNote extends React.Component {
             {
                 text: '删除',
                 onPress: () => {
-                    deleteAudio(element);
-                    const oldNoteContent = this.state.noteContent;
-                    const index = oldNoteContent.indexOf(element);
-                    if (index > -1) {
-                        oldNoteContent.splice(index, 1);
-                    }
-                    this.setState({
-                        noteContent: oldNoteContent,
-                        change: true
-                    });
+                    deleteAudio(element).then(() => {
+                        const oldNoteContent = this.state.noteContent;
+                        const index = oldNoteContent.indexOf(element);
+                        if (index > -1) {
+                            oldNoteContent.splice(index, 1);
+                        }
+                        this.setState({
+                            noteContent: oldNoteContent,
+                            change: true
+                        })
+                    }).catch(() => {
+
+                    })
                 },
                 style: {color: 'white'}
             }
@@ -237,20 +259,7 @@ export default class NewNote extends React.Component {
 
         return (
             <SwipeAction right={swipeOutButtons} key={index}>
-                <Card full key={index}>
-                    <Card.Body>
-                        <View style={{height: 42}}>
-                            <View style={styles.center}>
-                                <TouchableOpacity
-                                    onPress={() => this._play()}>
-                                    <Icon name="play-arrow" size={32} color="#FF5722"/>
-                                </TouchableOpacity>
-                            </View>
-
-                            <Text style={{marginLeft: 16}}>{element}</Text>
-                        </View>
-                    </Card.Body>
-                </Card>
+                <AudioPlayer id={index}/>
             </SwipeAction>
         )
     };
@@ -283,7 +292,6 @@ export default class NewNote extends React.Component {
     };
 
     showContent = () => {
-
         return (
             <View>
                 {this.state.noteContent.map((element, index) => {
@@ -299,7 +307,6 @@ export default class NewNote extends React.Component {
         )
 
     };
-
 
     updateSize = (height) => {
         this.setState({
@@ -319,6 +326,12 @@ export default class NewNote extends React.Component {
         return (
 
             <View style={styles.container}>
+                {this.state.isLoading ? <View style={styles.transparentMaskView}/> : <View/>}
+                {this.state.isLoading ?
+                    <View style={styles.floatView}>
+                        <Spinner style={styles.spinner} isVisible={true} size={100} type='Circle' color='#FF5722'/>
+                    </View> : <View/>}
+
                 {this.state.recording ? <View style={styles.maskView}>
                 </View> : <View/>}
                 {this.state.recording ? <View style={styles.floatView}>
@@ -327,7 +340,7 @@ export default class NewNote extends React.Component {
                 <SafeAreaView style={styles.container}>
                     <Header leftElement={
                         this.state.change ? <TouchableOpacity
-                                onPress={this.save}
+                                onPress={this.clickSave}
                                 style={{width: 45, marginLeft: 10}}>
                                 <Icon name="check" size={45} color="#FF5722"/>
                             </TouchableOpacity> :
@@ -357,7 +370,7 @@ export default class NewNote extends React.Component {
                                 {this.showContent()}
                                 <TextInput
 
-                                    onChangeText={ this.onChangeText}
+                                    onChangeText={this.onChangeText}
                                     style={styles.textInputStyle}
                                     editable
                                     multiline
@@ -397,6 +410,17 @@ const styles = StyleSheet.create({
     absolute: {
         position: "absolute",
         top: 0, left: 0, bottom: 0, right: 0,
+    },
+    transparentMaskView: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flex: 1,
+        zIndex: 4,
     },
     maskView: {
         position: 'absolute',

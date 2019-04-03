@@ -16,6 +16,9 @@ import {
     cancelTrans,
     deleteAudio
 } from "../../database/schemas";
+import AudioOperation from "../../components/audioOperation";
+
+
 const Spinner = require('react-native-spinkit');
 const uuid = require('uuid/v1');
 const { width, height } = Dimensions.get('window');
@@ -53,7 +56,9 @@ export default class HomePage extends React.Component {
     }
     componentWillUnmount() {
         if (rememberAllRealm.isInTransaction) {
-            cancelTrans();
+            cancelTrans().catch(() => {
+
+            });
         }
     }
 
@@ -84,7 +89,9 @@ export default class HomePage extends React.Component {
             openNote: true
         });
 
-        beginTrans();
+        beginTrans().catch(() => {
+
+        });
 
         if (note) {
 
@@ -100,12 +107,14 @@ export default class HomePage extends React.Component {
                 noteType: '',
                 noteContent: [],
             };
-            insertNote(newNote);
+            insertNote(newNote).then(() => {
+                this.props.navigation.navigate('NewNote', {
+                    note: newNote,
+                    isNew: true
+                })
+            }).catch(() => {
 
-            this.props.navigation.navigate('NewNote', {
-                note: newNote,
-                isNew: true
-            })
+            });
         }
 
     };
@@ -121,10 +130,10 @@ export default class HomePage extends React.Component {
                 onPress: () => {
                     Array.from(note.noteContent).forEach((element) => {
                         if (element.slice(0, 9) === '*#audio#*') {
-                            deleteAudio(element);
+                            deleteAudio(element).catch(() => {})
                         }
                     });
-                    deleteNote(note.id);
+                    deleteNote(note.id).catch(() => {});
                 },
                 style: {color: 'white'},
             }, {
@@ -173,8 +182,8 @@ export default class HomePage extends React.Component {
                 {this.state.isLoading ? <View style={styles.maskView}/> : <View/>}
                 {this.state.isLoading ?
                     <View style={styles.floatView}>
-                    <Spinner style={styles.spinner} isVisible={true} size={100} type='Circle' color='#FF5722'/>
-                    </View>: <View/>}
+                        <Spinner style={styles.spinner} isVisible={true} size={100} type='Circle' color='#FF5722'/>
+                    </View> : <View/>}
 
             <SafeAreaView style={{flex: 1, backgroundColor: '#fff'}}>
 
