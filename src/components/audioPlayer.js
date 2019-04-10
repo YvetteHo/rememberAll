@@ -5,7 +5,8 @@ import {
     Text,
     Slider,
     TouchableOpacity,
-    Platform, Alert, StyleSheet
+    Platform, Alert, StyleSheet,
+    ProgressViewIOS
 } from 'react-native';
 import {AudioUtils} from 'react-native-audio';
 
@@ -16,21 +17,29 @@ import Icon from "react-native-vector-icons/dist/MaterialIcons";
 export default class AudioPlayer extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {
-            playState: 'paused',
-            playSeconds: 0,
-            duration: 0
-        };
         this.sliderEditing = false;
         this.sound = new Sound(AudioUtils.DocumentDirectoryPath + '/test.aac', '', (error) => {
             if (error) {
                 console.log('failed to load the sound', error);
             }
+            console.log(this.sound.getDuration())
         });
-
+        this.state = {
+            playState: 'paused',
+            playSeconds: 0,
+            duration: 0
+        };
     }
 
     componentDidMount() {
+        // console.log(this.sound);
+        setTimeout(() => {
+                this.setState({
+                    duration: this.sound.getDuration()
+                })
+
+        }, 100);
+
         this.timeout = setInterval(() => {
             if (this.sound && this.sound.isLoaded() && this.state.playState === 'playing' && !this.sliderEditing) {
                 this.sound.getCurrentTime((seconds, isPlaying) => {

@@ -19,7 +19,6 @@ import {AudioRecorder, AudioUtils} from 'react-native-audio';
 import Sound from 'react-native-sound';
 import Icon from "react-native-vector-icons/dist/MaterialIcons";
 import {insertAudio, updateNote} from "../database/schemas";
-
 const uuid = require('uuid/v1');
 const { width, height } = Dimensions.get('window');
 
@@ -297,7 +296,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         width: width,
-        alignItems: 'center'
+        alignItems: 'center',
     },
     controls: {
         justifyContent: 'center',

@@ -10,28 +10,40 @@ import {
     TextInput,
     Keyboard,
     KeyboardAvoidingView,
-    Platform
+    Platform,
+    Image
 } from 'react-native';
 import Icon from 'react-native-vector-icons/dist/MaterialIcons';
 import Header from "../../components/header";
 import AudioOperation from "../../components/audioOperation";
 import {AudioUtils} from 'react-native-audio';
 import AudioPlayer from "../../components/audioPlayer";
-
+import ImagePicker from 'react-native-image-picker';
+import VideoOperation from '../../components/videoOperation';
 
 import {WhiteSpace, Card, Modal, SwipeAction, TextareaItem} from 'antd-mobile-rn';
 import {
     updateNote,
     deleteAudio,
     cancelTrans,
-    commitTrans,
+    commitTrans, deletePicture, insertPicture,
 } from "../../database/schemas";
 import Sound from "react-native-sound";
+import FullWidthImage from "../../components/FullWidthImage";
 
 const Spinner = require('react-native-spinkit');
 
 const uuid = require('uuid/v1');
-const {width, screenHeight} = Dimensions.get('window');
+const demessions = Dimensions.get('window');
+
+const options = {
+    title: 'Select picture',
+    // customButtons: [{ name: 'fb', title: 'Choose Photo from Facebook' }],
+    storageOptions: {
+        skipBackup: true,
+        path: 'images',
+    },
+};
 
 export default class NewNote extends React.Component {
     constructor(props) {
@@ -46,6 +58,8 @@ export default class NewNote extends React.Component {
             height: 40,
             value: '',
             isLoading: false,
+            newPicture: '',
+            isVideoRecording: false,
         };
         this.endRecording = this.endRecording.bind(this);
     }
@@ -70,7 +84,40 @@ export default class NewNote extends React.Component {
 
     };
 
+    cameraClicked = () => {
+        ImagePicker.showImagePicker(options, (response) => {
+            console.log('Response = ', response);
 
+            if (response.didCancel) {
+                console.log('User cancelled image picker');
+            } else if (response.error) {
+                console.log('ImagePicker Error: ', response.error);
+            } else if (response.customButton) {
+                console.log('User tapped custom button: ', response.customButton);
+            } else {
+
+                 // You can also display the image using data:
+                // const source = { uri: 'data:image/jpeg;base64,' + response.data };
+
+                this.setState({
+                    newPicture: {uri: response.uri},
+                });
+                const oldNoteContent = this.state.noteContent;
+                oldNoteContent.push('*#image#*' + response.uri);
+                this.setState({
+                    noteContent: oldNoteContent,
+                    change: true
+                })
+                insertPicture({uri: '*#image#*' + response.uri, noteId: this.state.note.id})
+            }
+
+        });
+    };
+    videoCamClicked = () => {
+        this.setState({
+            isVideoRecording: true
+        })
+    };
     async _play() {
         if (this.state.recording) {
             await this._stop();
@@ -114,8 +161,6 @@ export default class NewNote extends React.Component {
                 noteContent: oldNoteContent
             })
         }
-
-
     };
 
 
@@ -292,13 +337,40 @@ export default class NewNote extends React.Component {
     };
 
     showContent = () => {
+
         return (
             <View>
                 {this.state.noteContent.map((element, index) => {
                         if (element.slice(0, 9) === '*#audio#*') {
                             return this.renderAudio(element, index)
 
-                        } else {
+                        } else if (element.slice(0, 9) === '*#image#*') {
+                            const swipeOutButtons = [
+                                {
+                                    text: '删除',
+                                    onPress: () => {
+                                        deletePicture(element).then(() => {
+                                            const oldNoteContent = this.state.noteContent;
+                                            const index = oldNoteContent.indexOf(element);
+                                            if (index > -1) {
+                                                oldNoteContent.splice(index, 1);
+                                            }
+                                            this.setState({
+                                                noteContent: oldNoteContent,
+                                                change: true
+                                            })
+                                        }).catch(() => {
+
+                                        })
+                                    },
+                                    style: {color: 'white'}
+                                }
+                            ];
+
+                            return <SwipeAction right={swipeOutButtons} key={index}>
+                                <FullWidthImage uri={element.substr(9)} key={index}/>
+                            </SwipeAction>
+                        }else {
                             return this.renderTextInput(element, index)
                         }
                     }
@@ -318,7 +390,6 @@ export default class NewNote extends React.Component {
         const {navigation} = this.props;
         const note = navigation.getParam('note', null);
         const {newValue, height} = this.state;
-
         let newStyle = {
             height,
             fontSize: 50,
@@ -336,6 +407,9 @@ export default class NewNote extends React.Component {
                 </View> : <View/>}
                 {this.state.recording ? <View style={styles.floatView}>
                     <AudioOperation endRecording={(e) => this.endRecording(e)} note={note ? note : null}/>
+                </View> : <View/>}
+                {this.state.isVideoRecording ? <View style={styles.floatView}>
+                    <VideoOperation style={{width: '100%', height: '100%'}}/>
                 </View> : <View/>}
                 <SafeAreaView style={styles.container}>
                     <Header leftElement={
@@ -385,9 +459,19 @@ export default class NewNote extends React.Component {
                             </ScrollView>
                         </KeyboardAvoidingView>
                         <View style={styles.footerContainer}>
+                            <View style={styles.footerLeft}>
+                                <TouchableOpacity onPress={this.cameraClicked}>
+                                    <Icon name="camera" size={64} color="#FF5722"/>
+                                </TouchableOpacity>
+                            </View>
                             <View style={styles.footerCenter}>
                                 <TouchableOpacity onPress={this.micClicked}>
                                     <Icon name="mic" size={64} color="#FF5722"/>
+                                </TouchableOpacity>
+                            </View>
+                            <View style={styles.footerRight}>
+                                <TouchableOpacity onPress={this.videoCamClicked}>
+                                    <Icon name="videocam" size={64} color="#FF5722"/>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -446,25 +530,45 @@ const styles = StyleSheet.create({
         flex: 1,
         zIndex: 4,
     },
+    // footerContainer: {
+    //     position: 'absolute',
+    //     left: 0,
+    //     // right: 0,
+    //     bottom: 0,
+    //     justifyContent: 'center',
+    //     flexDirection: 'row',
+    // },
+    // footerCenter: {
+    //     alignItems: 'center',
+    //     justifyContent: 'center',
+    //     flex: 1,
+    // },
+    // footerLeft: {
+    //     marginLeft: 5,
+    //     flex: 1,
+    // },
+    // footerRight: {
+    //     marginRight: 5,
+    //     flex: 1,
+    // },
     footerContainer: {
-        position: 'absolute',
-        left: 0,
-        // right: 0,
-        bottom: 0,
-        justifyContent: 'center',
+        // flex: 1,
+        // position: 'absolute',
+        // bottom: 0,
+        justifyContent: 'space-between',
         flexDirection: 'row',
     },
     footerCenter: {
         alignItems: 'center',
-        justifyContent: 'center',
         flex: 1,
     },
     footerLeft: {
-        marginLeft: 5,
+        // marginLeft: 5,
         flex: 1,
     },
     footerRight: {
-        marginRight: 5,
+        // marginRight: 5,
+        alignItems: 'flex-end',
         flex: 1,
     },
     center: {
@@ -474,7 +578,20 @@ const styles = StyleSheet.create({
 
     },
     textInputStyle: {
-        height: screenHeight,
         fontSize: 50,
-    }
+    },
+    canvasContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        // alignItems: 'center',
+        backgroundColor: '#F5FCFF',
+        position: 'relative'
+    },
+    canvas: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        bottom: 0,
+        right: 0,
+    },
 });

@@ -2,6 +2,8 @@ import Realm from 'realm';
 
 const NOTE_SCHEMA = "NoteList";
 const AUDIO_SCHEMA = "AudioList";
+const PICTURE_SCHEMA = "PictureList";
+const VIDEO_SCHEMA = "VideoList";
 
 export let rememberAllRealm;
 
@@ -26,9 +28,27 @@ export const AudioSchema = {
     }
 };
 
+export const PictureSchema = {
+    name: PICTURE_SCHEMA,
+    primaryKey: 'uri',
+    properties: {
+        uri: 'string',
+        noteId: 'string',
+    }
+};
+
+export const VideoSchema = {
+    name: VIDEO_SCHEMA,
+    primaryKey: 'uri',
+    properties: {
+        uri: 'string',
+        noteId: 'string',
+    }
+};
+
 const databaseOptions = {
     path: 'rememberAll.realm',
-    schema: [NoteSchema, AudioSchema]
+    schema: [NoteSchema, AudioSchema, PictureSchema, VideoSchema]
 };
 
 export const queryNotes = (realmObject) => new Promise((resolve, reject) => {
@@ -128,9 +148,70 @@ export const deleteAudio = (audioId) => new Promise((resolve, reject) => {
         })
     }
 
+});
+
+export const insertPicture = (newPicture) => new Promise((resolve, reject) => {
+
+    if (rememberAllRealm.isInTransaction) {
+        rememberAllRealm.create(PICTURE_SCHEMA, newPicture);
+        resolve(newPicture);
+    } else {
+        rememberAllRealm.write(() => {
+            rememberAllRealm.create(PICTURE_SCHEMA, newPicture);
+            resolve(newPicture);
+        });
+    }
+});
+
+export const deletePicture = (pictureId) => new Promise((resolve, reject) => {
+
+    if (rememberAllRealm.isInTransaction) {
+        console.log(pictureId)
+        let deletingPicture = rememberAllRealm.objectForPrimaryKey(PICTURE_SCHEMA, pictureId);
+        console.log('删除', deletingPicture);
+        rememberAllRealm.delete(deletingPicture);
+        resolve();
+    } else {
+        rememberAllRealm.write(() => {
+            let deletingPicture = rememberAllRealm.objectForPrimaryKey(PICTURE_SCHEMA, pictureId);
+            console.log('删除', deletingPicture);
+            rememberAllRealm.delete(deletingPicture);
+            resolve();
+        })
+    }
 
 });
 
+export const insertVideo = (newVideo) => new Promise((resolve, reject) => {
+
+    if (rememberAllRealm.isInTransaction) {
+        rememberAllRealm.create(VIDEO_SCHEMA, newVideo);
+        resolve(newVideo);
+    } else {
+        rememberAllRealm.write(() => {
+            rememberAllRealm.create(PICTURE_SCHEMA, newVideo);
+            resolve(newVideo);
+        });
+    }
+});
+
+export const deleteVideo = (videoId) => new Promise((resolve, reject) => {
+
+    if (rememberAllRealm.isInTransaction) {
+        let deletingVideo = rememberAllRealm.objectForPrimaryKey(PICTURE_SCHEMA, videoId);
+        console.log('删除', deletingVideo);
+        rememberAllRealm.delete(deletingVideo);
+        resolve();
+    } else {
+        rememberAllRealm.write(() => {
+            let deletingVideo = rememberAllRealm.objectForPrimaryKey(PICTURE_SCHEMA, videoId);
+            console.log('删除', deletingVideo);
+            rememberAllRealm.delete(deletingVideo);
+            resolve();
+        })
+    }
+
+});
 export const beginTrans = () => new Promise((resolve, reject) => {
     if (!rememberAllRealm.isInTransaction) {
         rememberAllRealm.beginTransaction();
