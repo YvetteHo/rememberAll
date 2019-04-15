@@ -166,7 +166,7 @@ export const insertPicture = (newPicture) => new Promise((resolve, reject) => {
 export const deletePicture = (pictureId) => new Promise((resolve, reject) => {
 
     if (rememberAllRealm.isInTransaction) {
-        console.log(pictureId)
+        console.log(pictureId);
         let deletingPicture = rememberAllRealm.objectForPrimaryKey(PICTURE_SCHEMA, pictureId);
         console.log('删除', deletingPicture);
         rememberAllRealm.delete(deletingPicture);
@@ -189,7 +189,7 @@ export const insertVideo = (newVideo) => new Promise((resolve, reject) => {
         resolve(newVideo);
     } else {
         rememberAllRealm.write(() => {
-            rememberAllRealm.create(PICTURE_SCHEMA, newVideo);
+            rememberAllRealm.create(VIDEO_SCHEMA, newVideo);
             resolve(newVideo);
         });
     }
@@ -198,13 +198,13 @@ export const insertVideo = (newVideo) => new Promise((resolve, reject) => {
 export const deleteVideo = (videoId) => new Promise((resolve, reject) => {
 
     if (rememberAllRealm.isInTransaction) {
-        let deletingVideo = rememberAllRealm.objectForPrimaryKey(PICTURE_SCHEMA, videoId);
+        let deletingVideo = rememberAllRealm.objectForPrimaryKey(VIDEO_SCHEMA, videoId);
         console.log('删除', deletingVideo);
         rememberAllRealm.delete(deletingVideo);
         resolve();
     } else {
         rememberAllRealm.write(() => {
-            let deletingVideo = rememberAllRealm.objectForPrimaryKey(PICTURE_SCHEMA, videoId);
+            let deletingVideo = rememberAllRealm.objectForPrimaryKey(VIDEO_SCHEMA, videoId);
             console.log('删除', deletingVideo);
             rememberAllRealm.delete(deletingVideo);
             resolve();

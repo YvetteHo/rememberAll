@@ -11,7 +11,8 @@ import {
     Keyboard,
     KeyboardAvoidingView,
     Platform,
-    Image
+    Image,
+    cameraRoll,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/dist/MaterialIcons';
 import Header from "../../components/header";
@@ -19,18 +20,18 @@ import AudioOperation from "../../components/audioOperation";
 import {AudioUtils} from 'react-native-audio';
 import AudioPlayer from "../../components/audioPlayer";
 import ImagePicker from 'react-native-image-picker';
-import VideoOperation from '../../components/videoOperation';
-
+import MyVideoPlayer from "../../components/videoPlayer";
 import {WhiteSpace, Card, Modal, SwipeAction, TextareaItem} from 'antd-mobile-rn';
 import {
     updateNote,
     deleteAudio,
     cancelTrans,
-    commitTrans, deletePicture, insertPicture,
+    commitTrans, deletePicture, insertPicture, deleteVideo,
 } from "../../database/schemas";
 import Sound from "react-native-sound";
 import FullWidthImage from "../../components/FullWidthImage";
-
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
+import Spacer from 'react-native-spacer';
 const Spinner = require('react-native-spinkit');
 
 const uuid = require('uuid/v1');
@@ -42,6 +43,8 @@ const options = {
     storageOptions: {
         skipBackup: true,
         path: 'images',
+        cameraRoll: true,
+        noData: true
     },
 };
 
@@ -49,6 +52,10 @@ export default class NewNote extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
+            selection: {
+                start: 0,
+                end: 0
+            },
             recording: false,
             change: false,
             modalVisible: true,
@@ -70,7 +77,10 @@ export default class NewNote extends React.Component {
 
     componentDidMount() {
     }
-
+    handleSelectionChange = ({ nativeEvent: { selection } }) => {
+        console.log(selection)
+        this.setState({ selection })
+    }
     micClicked = () => {
 
         if (this.state.recording) {
@@ -82,6 +92,16 @@ export default class NewNote extends React.Component {
             change: true
         })
 
+    };
+
+    endVideoRecording = (uri) => {
+        console.warn('回来了', uri);
+        const oldNoteContent = this.state.noteContent;
+        oldNoteContent.push(uri);
+        this.setState({
+            noteContent: oldNoteContent,
+            change: true
+        })
     };
 
     cameraClicked = () => {
@@ -107,16 +127,17 @@ export default class NewNote extends React.Component {
                 this.setState({
                     noteContent: oldNoteContent,
                     change: true
-                })
+                });
                 insertPicture({uri: '*#image#*' + response.uri, noteId: this.state.note.id})
             }
 
         });
     };
     videoCamClicked = () => {
-        this.setState({
-            isVideoRecording: true
-        })
+        this.props.navigation.navigate('VideoOperation', {
+            noteId: this.state.note.id,
+            endVideoRecording: this.endVideoRecording
+        });
     };
     async _play() {
         if (this.state.recording) {
@@ -317,10 +338,10 @@ export default class NewNote extends React.Component {
 
         return (
             <TextInput
+                // ref={ref => this.textInput = ref}
                 key={index}
                 placeholder="Your Placeholder"
                 onChangeText={(text) => {
-                    console.log(text);
                     this.state.noteContent[index] = text;
                     this.setState({
                         change: true
@@ -330,7 +351,10 @@ export default class NewNote extends React.Component {
                 editable
                 multiline
                 defaultValue={element}
-                onContentSizeChange={(e) => this.updateSize(e.nativeEvent.contentSize.height)}
+                onContentSizeChange={(e) => {
+                    // this.measureTextInput()
+                    this.updateSize(e.nativeEvent.contentSize.height)
+                }}
                 keyboardType="default"
             />
         )
@@ -370,8 +394,37 @@ export default class NewNote extends React.Component {
                             return <SwipeAction right={swipeOutButtons} key={index}>
                                 <FullWidthImage uri={element.substr(9)} key={index}/>
                             </SwipeAction>
+                        }else if (element.slice(0, 9) === '*#video#*'){
+                            const swipeOutButtons = [
+                                {
+                                    text: '删除',
+                                    onPress: () => {
+                                        deleteVideo(element).then(() => {
+                                            const oldNoteContent = this.state.noteContent;
+                                            const index = oldNoteContent.indexOf(element);
+                                            if (index > -1) {
+                                                oldNoteContent.splice(index, 1);
+                                            }
+                                            this.setState({
+                                                noteContent: oldNoteContent,
+                                                change: true
+                                            });
+
+                                            console.warn(element)
+                                        }).catch((res) => {
+                                            console.warn(res)
+                                        })
+                                    },
+                                    style: {color: 'white'}
+                                }
+                            ];
+                            // return <Video key={index} source={{uri: element.slice(9)}} style={styles.backgroundVideo}/>
+                            return <SwipeAction right={swipeOutButtons} key={index}>
+                            <MyVideoPlayer key={index} uri={element.slice(9)}/>
+                            </SwipeAction>;
+                            // return <Text>{element}喵喵喵</Text>
                         }else {
-                            return this.renderTextInput(element, index)
+                                return this.renderTextInput(element, index)
                         }
                     }
                 )}
@@ -379,6 +432,16 @@ export default class NewNote extends React.Component {
         )
 
     };
+    measureTextInput() {
+        this.textInput.measure((x, y, width, height, pageX, pageY) => {
+            console.log(x, y, width, height, pageX, pageY)
+            console.log(y + height)
+
+            this.scrollView.scrollToPosition(x, y + height - 300, true)
+            // this.scrollView.scrollTo()
+        })
+    }
+
 
     updateSize = (height) => {
         this.setState({
@@ -387,6 +450,7 @@ export default class NewNote extends React.Component {
     };
 
     render() {
+        const { selection } = this.state;
         const {navigation} = this.props;
         const note = navigation.getParam('note', null);
         const {newValue, height} = this.state;
@@ -408,9 +472,9 @@ export default class NewNote extends React.Component {
                 {this.state.recording ? <View style={styles.floatView}>
                     <AudioOperation endRecording={(e) => this.endRecording(e)} note={note ? note : null}/>
                 </View> : <View/>}
-                {this.state.isVideoRecording ? <View style={styles.floatView}>
-                    <VideoOperation style={{width: '100%', height: '100%'}}/>
-                </View> : <View/>}
+                {/*{this.state.isVideoRecording ? <View style={styles.floatView}>*/}
+                {/*    <VideoOperation style={{width: '100%', height: '100%'}}/>*/}
+                {/*</View> : <View/>}*/}
                 <SafeAreaView style={styles.container}>
                     <Header leftElement={
                         this.state.change ? <TouchableOpacity
@@ -428,36 +492,33 @@ export default class NewNote extends React.Component {
                     />
 
                     <View style={styles.fullScreen}>
-                        <KeyboardAvoidingView
-                            style={{flex: 1, flexDirection: 'column', justifyContent: 'center'}}
-                            behavior="padding"
-                            enabled={Platform.OS === 'ios'}
-                            keyboardVerticalOffset={100}
-                        >
-                            <ScrollView
-                                ref={ref => this.scrollView = ref}
-                                onContentSizeChange={(contentWidth, contentHeight) => {
-                                    console.log('changeSize');
-                                    this.scrollView.scrollToEnd({animated: true})
-                                }}
+                            <KeyboardAwareScrollView
+                                // ref={ref => this.scrollView = ref}
+                                // style={{flex:1}}
+                                // onContentSizeChange={(contentWidth, contentHeight) => {
+                                //     console.log('changeSize');
+                                //     this.scrollView.scrollToEnd({animated: true})
+                                // }}
                             >
                                 {this.showContent()}
                                 <TextInput
-
+                                    ref={ref => this.textInput = ref}
                                     onChangeText={this.onChangeText}
+                                    selection={selection}
+                                    onSelectionChange={this.handleSelectionChange}
                                     style={styles.textInputStyle}
                                     editable
                                     multiline
                                     value={newValue}
                                     onContentSizeChange={(e) => {
+                                        // this.measureTextInput()
                                         this.updateSize(e.nativeEvent.contentSize.height)
 
                                     }}
                                     keyboardType="default"
                                 />
 
-                            </ScrollView>
-                        </KeyboardAvoidingView>
+                            </KeyboardAwareScrollView>
                         <View style={styles.footerContainer}>
                             <View style={styles.footerLeft}>
                                 <TouchableOpacity onPress={this.cameraClicked}>
@@ -530,6 +591,13 @@ const styles = StyleSheet.create({
         flex: 1,
         zIndex: 4,
     },
+    backgroundVideo: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        bottom: 0,
+        right: 0,
+    },
     // footerContainer: {
     //     position: 'absolute',
     //     left: 0,
@@ -578,7 +646,7 @@ const styles = StyleSheet.create({
 
     },
     textInputStyle: {
-        fontSize: 50,
+        fontSize: 20,
     },
     canvasContainer: {
         flex: 1,

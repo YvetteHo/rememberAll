@@ -4,6 +4,9 @@ import { createStackNavigator,  createAppContainer, createDrawerNavigator  } fro
 import HomePage from '../pages/homePage/index';
 import NewNote from '../pages/newNote/index';
 import Login from '../pages/login/index';
+import VideoOperation from '../pages/videoOperation/index'
+import SearchPage from '../pages/searchPage/index'
+import MyCalendar from  '../pages/calendar/index'
 
 const DrawerNavigator = createStackNavigator({
     Home: {
@@ -13,8 +16,29 @@ const DrawerNavigator = createStackNavigator({
             gesturesEnabled: false
         }
     },
+    SearchPage: {
+        screen: SearchPage,
+        navigationOptions: {
+            header: null,
+            gesturesEnabled: false
+        }
+    },
+    MyCalendar: {
+        screen: MyCalendar,
+        navigationOptions: {
+            header: null,
+            gesturesEnabled: false
+        }
+    },
     NewNote: {
         screen: NewNote,
+        navigationOptions: {
+            header: null,
+            gesturesEnabled: false
+        }
+    },
+    VideoOperation: {
+        screen: VideoOperation,
         navigationOptions: {
             header: null,
             gesturesEnabled: false

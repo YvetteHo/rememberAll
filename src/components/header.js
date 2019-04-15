@@ -13,7 +13,7 @@ const headerShadow = {
     y: 1.5,
 };
 
-export default class Header extends React.Component<any, any> {
+export default class Header extends React.Component {
     render() {
         return (
             <BoxShadow setting={headerShadow}>
@@ -48,6 +48,8 @@ const styles = StyleSheet.create({
     headerRight: {
         marginRight: 5,
         flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     titleFont: {
         fontSize: 20,

@@ -2,6 +2,9 @@ import React from 'react';
 import {SafeAreaView, Platform, Animated, Text, View, Image, TouchableOpacity, StyleSheet, ScrollView, Dimensions, TouchableHighlight, FlatList, SectionList, TouchableWithoutFeedback} from 'react-native';
 import Svg, {Path, G, Circle} from 'react-native-svg';
 import Icon from 'react-native-vector-icons/dist/MaterialIcons';
+import FontIcon from 'react-native-vector-icons/dist/FontAwesome' ;
+import IIcon from 'react-native-vector-icons/dist/Ionicons';
+
 import {Drawer, Button, WhiteSpace, Card, SwipeAction} from 'antd-mobile-rn';
 import Header from "../../components/header";
 import {
@@ -17,7 +20,8 @@ import {
     deleteAudio
 } from "../../database/schemas";
 import AudioOperation from "../../components/audioOperation";
-
+import ModalDropdown from 'react-native-modal-dropdown';
+import DatePicker from 'react-native-datepicker'
 
 const Spinner = require('react-native-spinkit');
 const uuid = require('uuid/v1');
@@ -33,13 +37,14 @@ const headerShadow = {
     x: 0,
     y: 1.5,
 };
+const DEMO_OPTIONS = ['录音', '图片', '视频'];
 
 export default class HomePage extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
             isAddClicked: false,
-            drawerOpen: true,
+            drawerOpen: false,
             notes: [],
             openNote: true,
             realmObject: null,
@@ -62,6 +67,14 @@ export default class HomePage extends React.Component {
         }
     }
 
+    search = () => {
+        this.props.navigation.navigate('SearchPage')
+    };
+
+    searchByTime = () => {
+        this.props.navigation.navigate('MyCalendar')
+
+    }
 
     reloadData = () => {
         queryNotes(this.state.realmObject).then((notes) => {
@@ -121,7 +134,12 @@ export default class HomePage extends React.Component {
 
     onOpenChange = (isOpen) => {
         /* tslint:disable: no-console */
+        this.setState({
+            drawerOpen: !this.state.drawerOpen
+        })
     };
+
+
 
     renderItem = (note, index) => {
         const swipeOutButtons = [
@@ -167,14 +185,17 @@ export default class HomePage extends React.Component {
 
     };
 
+
     _keyExtractor = (item) => item.id;
 
     render() {
         navigator = this.props.navigation;
         const sidebar = (
-            <ScrollView style={{backgroundColor: 'white'}}>
-                <Text>你是狗吧</Text>
-            </ScrollView>
+            <SafeAreaView style={{flex: 1, backgroundColor: '#fff'}}>
+             <ScrollView style={{backgroundColor: 'white'}}>
+                 <Text>侧边栏</Text>
+             </ScrollView>
+            </SafeAreaView>
         );
 
         return (
@@ -184,20 +205,33 @@ export default class HomePage extends React.Component {
                     <View style={styles.floatView}>
                         <Spinner style={styles.spinner} isVisible={true} size={100} type='Circle' color='#FF5722'/>
                     </View> : <View/>}
-
-            <SafeAreaView style={{flex: 1, backgroundColor: '#fff'}}>
-
                 <Drawer sidebar={sidebar} position='left'
                         open={false} drawerRef={el => (this.drawer = el)}
                         onOpenChange={this.onOpenChange}
                         drawerBackgroundColor='#ccc'>
+            <SafeAreaView style={{flex: 1, backgroundColor: '#fff'}}>
+
+
                     <Header leftElement={
                         <TouchableOpacity
                             onPress={() => this.drawer && this.drawer.openDrawer()}
                             style={{width: 45, marginLeft: 10}}>
                             <Icon name="list" size={45} color="#FF5722"/>
                         </TouchableOpacity>
-                    } titleElement='笔记'/>
+                    } titleElement='笔记' rightElement={
+                        <View style={{flex: 1, flexDirection: 'row', alignItems: 'center'}}>
+                            <TouchableOpacity onPress={this.search} style={{flex: 1, justifyContent: 'flex-start'}}>
+                                <FontIcon name="search" size={30} color="#FF5722" title="Go to Details"/>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={this.searchByTime} style={{flex: 1, justifyContent: 'flex-end'}}>
+                                <IIcon name="ios-calendar" size={30} color="#FF5722" title="Go to Details"/>
+                            </TouchableOpacity>
+                        </View>
+
+
+
+
+                    }/>
 
                     <ScrollView>
                         <FlatList
@@ -219,16 +253,15 @@ export default class HomePage extends React.Component {
                             />
                         </Svg>
                     </View>
-                    <View style={{position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center'}}>
+                    <View style={{left: 0, right: 0, bottom: 0, alignItems: 'center'}}>
 
                         <TouchableOpacity onPress={() => this.openNote(null)} style={styles.button}>
                             <Icon name="add-circle" size={64} color="#FF5722" title="Go to Details"/>
                         </TouchableOpacity>
 
                     </View>
-
-                </Drawer>
             </SafeAreaView>
+                </Drawer>
             </View>
 
         );
@@ -285,6 +318,19 @@ const styles = StyleSheet.create({
         left: 0,
         width: '100%',
         height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flex: 1,
+        zIndex: 4,
+    },
+    blackMaskView: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'black',
+        opacity: 0.8,
         justifyContent: 'center',
         alignItems: 'center',
         flex: 1,
