@@ -30,8 +30,9 @@ import {
 } from "../../database/schemas";
 import Sound from "react-native-sound";
 import FullWidthImage from "../../components/FullWidthImage";
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
+import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view'
 import Spacer from 'react-native-spacer';
+
 const Spinner = require('react-native-spinkit');
 
 const uuid = require('uuid/v1');
@@ -77,9 +78,10 @@ export default class NewNote extends React.Component {
 
     componentDidMount() {
     }
-    handleSelectionChange = ({ nativeEvent: { selection } }) => {
+
+    handleSelectionChange = ({nativeEvent: {selection}}) => {
         console.log(selection)
-        this.setState({ selection })
+        this.setState({selection})
     }
     micClicked = () => {
 
@@ -116,7 +118,7 @@ export default class NewNote extends React.Component {
                 console.log('User tapped custom button: ', response.customButton);
             } else {
 
-                 // You can also display the image using data:
+                // You can also display the image using data:
                 // const source = { uri: 'data:image/jpeg;base64,' + response.data };
 
                 this.setState({
@@ -139,33 +141,6 @@ export default class NewNote extends React.Component {
             endVideoRecording: this.endVideoRecording
         });
     };
-    async _play() {
-        if (this.state.recording) {
-            await this._stop();
-        }
-
-        console.log('play');
-
-        // These timeouts are a hacky workaround for some issues with react-native-sound.
-        // See https://github.com/zmxv/react-native-sound/issues/89.
-        setTimeout(() => {
-            let sound = new Sound(AudioUtils.DocumentDirectoryPath + '/test.aac', '', (error) => {
-                if (error) {
-                    console.log('failed to load the sound', error);
-                }
-            });
-
-            setTimeout(() => {
-                sound.play((success) => {
-                    if (success) {
-                        console.log('successfully finished playing');
-                    } else {
-                        console.log('playback failed due to audio decoding errors');
-                    }
-                });
-            }, 100);
-        }, 100);
-    }
 
     updateText = (index) => {
         const oldNoteContent = this.state.noteContent;
@@ -361,7 +336,6 @@ export default class NewNote extends React.Component {
     };
 
     showContent = () => {
-
         return (
             <View>
                 {this.state.noteContent.map((element, index) => {
@@ -394,7 +368,7 @@ export default class NewNote extends React.Component {
                             return <SwipeAction right={swipeOutButtons} key={index}>
                                 <FullWidthImage uri={element.substr(9)} key={index}/>
                             </SwipeAction>
-                        }else if (element.slice(0, 9) === '*#video#*'){
+                        } else if (element.slice(0, 9) === '*#video#*') {
                             const swipeOutButtons = [
                                 {
                                     text: '删除',
@@ -418,20 +392,18 @@ export default class NewNote extends React.Component {
                                     style: {color: 'white'}
                                 }
                             ];
-                            // return <Video key={index} source={{uri: element.slice(9)}} style={styles.backgroundVideo}/>
                             return <SwipeAction right={swipeOutButtons} key={index}>
-                            <MyVideoPlayer key={index} uri={element.slice(9)}/>
+                                <MyVideoPlayer key={index} uri={element.slice(9)}/>
                             </SwipeAction>;
-                            // return <Text>{element}喵喵喵</Text>
-                        }else {
-                                return this.renderTextInput(element, index)
+                        } else {
+                            return this.renderTextInput(element, index)
                         }
                     }
                 )}
             </View>
         )
-
     };
+
     measureTextInput() {
         this.textInput.measure((x, y, width, height, pageX, pageY) => {
             console.log(x, y, width, height, pageX, pageY)
@@ -450,7 +422,7 @@ export default class NewNote extends React.Component {
     };
 
     render() {
-        const { selection } = this.state;
+        const {selection} = this.state;
         const {navigation} = this.props;
         const note = navigation.getParam('note', null);
         const {newValue, height} = this.state;
@@ -492,33 +464,34 @@ export default class NewNote extends React.Component {
                     />
 
                     <View style={styles.fullScreen}>
-                            <KeyboardAwareScrollView
-                                // ref={ref => this.scrollView = ref}
-                                // style={{flex:1}}
-                                // onContentSizeChange={(contentWidth, contentHeight) => {
-                                //     console.log('changeSize');
-                                //     this.scrollView.scrollToEnd({animated: true})
-                                // }}
-                            >
-                                {this.showContent()}
-                                <TextInput
-                                    ref={ref => this.textInput = ref}
-                                    onChangeText={this.onChangeText}
-                                    selection={selection}
-                                    onSelectionChange={this.handleSelectionChange}
-                                    style={styles.textInputStyle}
-                                    editable
-                                    multiline
-                                    value={newValue}
-                                    onContentSizeChange={(e) => {
-                                        // this.measureTextInput()
-                                        this.updateSize(e.nativeEvent.contentSize.height)
+                        <KeyboardAwareScrollView
+                            // ref={ref => this.scrollView = ref}
+                            // style={{flex:1}}
+                            // onContentSizeChange={(contentWidth, contentHeight) => {
+                            //     console.log('changeSize');
+                            //     this.scrollView.scrollToEnd({animated: true})
+                            // }}
+                            enableOnAndroid={true}
+                        >
+                            {this.showContent()}
+                            <TextInput
+                                ref={ref => this.textInput = ref}
+                                onChangeText={this.onChangeText}
+                                selection={selection}
+                                onSelectionChange={this.handleSelectionChange}
+                                style={styles.textInputStyle}
+                                editable
+                                multiline
+                                value={newValue}
+                                onContentSizeChange={(e) => {
+                                    // this.measureTextInput()
+                                    this.updateSize(e.nativeEvent.contentSize.height)
 
-                                    }}
-                                    keyboardType="default"
-                                />
+                                }}
+                                keyboardType="default"
+                            />
 
-                            </KeyboardAwareScrollView>
+                        </KeyboardAwareScrollView>
                         <View style={styles.footerContainer}>
                             <View style={styles.footerLeft}>
                                 <TouchableOpacity onPress={this.cameraClicked}>

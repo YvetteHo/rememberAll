@@ -104,7 +104,6 @@ export const updateNote = (note) => new Promise((resolve, reject) => {
 export const deleteNote = (noteId) => new Promise((resolve, reject) => {
     if (rememberAllRealm.isInTransaction) {
         let deletingNote = rememberAllRealm.objectForPrimaryKey(NOTE_SCHEMA, noteId);
-        console.log('删除', deletingNote);
         rememberAllRealm.delete(deletingNote);
         resolve();
     } else {

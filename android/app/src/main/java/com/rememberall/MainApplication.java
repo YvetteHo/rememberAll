@@ -3,17 +3,17 @@ package com.rememberall;
 import android.app.Application;
 
 import com.facebook.react.ReactApplication;
-import com.rnfs.RNFSPackage;
-import com.brentvatne.react.ReactVideoPackage;
-import org.reactnative.camera.RNCameraPackage;
-import com.imagepicker.ImagePickerPackage;
-import com.react.rnspinkit.RNSpinkitPackage;
-import com.zmxv.RNSound.RNSoundPackage;
-import com.rnim.rn.audio.ReactNativeAudioPackage;
 import io.realm.react.RealmReactPackage;
+import com.brentvatne.react.ReactVideoPackage;
 import com.oblador.vectoricons.VectorIconsPackage;
 import com.horcrux.svg.SvgPackage;
+import com.react.rnspinkit.RNSpinkitPackage;
+import com.zmxv.RNSound.RNSoundPackage;
+import com.imagepicker.ImagePickerPackage;
 import com.swmansion.gesturehandler.react.RNGestureHandlerPackage;
+import com.rnfs.RNFSPackage;
+import org.reactnative.camera.RNCameraPackage;
+import com.rnim.rn.audio.ReactNativeAudioPackage;
 import com.facebook.react.ReactNativeHost;
 import com.facebook.react.ReactPackage;
 import com.facebook.react.shell.MainReactPackage;
@@ -34,17 +34,17 @@ public class MainApplication extends Application implements ReactApplication {
     protected List<ReactPackage> getPackages() {
       return Arrays.<ReactPackage>asList(
           new MainReactPackage(),
-            new RNFSPackage(),
-            new ReactVideoPackage(),
-            new RNCameraPackage(),
-            new ImagePickerPackage(),
-            new RNSpinkitPackage(),
-            new RNSoundPackage(),
-            new ReactNativeAudioPackage(),
             new RealmReactPackage(),
+            new ReactVideoPackage(),
             new VectorIconsPackage(),
             new SvgPackage(),
-            new RNGestureHandlerPackage()
+            new RNSpinkitPackage(),
+            new RNSoundPackage(),
+            new ImagePickerPackage(),
+            new RNGestureHandlerPackage(),
+            new RNFSPackage(),
+            new RNCameraPackage(),
+            new ReactNativeAudioPackage()
       );
     }
 

@@ -35,8 +35,6 @@ export default class MyCalendar extends React.Component {
     };
 
     dayPressed = (day) => {
-        console.log(day)
-        // let newMarkedDates = this.state.markedDates;
         const newMarkedDates = Object.assign({}, this.state.markedDates);
         if (!this.state.hasMarked) {
             newMarkedDates[[day.dateString]] = {selected: true, startingDay: true, color: 'green', textColor: 'gray'};
@@ -46,7 +44,6 @@ export default class MyCalendar extends React.Component {
                     startDay: day.dateString,
                     markedDates: newMarkedDates
                 });
-            // console.log(newMarkedDates)
         } else if (!this.state.stopMark){
             newMarkedDates[[day.dateString]] = {customStyles: {
                     container: {
@@ -107,7 +104,6 @@ export default class MyCalendar extends React.Component {
             />
                 <View style={{alignItems: 'center'}}><Text style={{fontSize: 20}}>{this.state.startDay}</Text></View>
                 <View style={{alignItems: 'center'}}><Text style={{fontSize: 20}}>{this.state.endDay}</Text></View>
-
 
         </SafeAreaView>;
     }

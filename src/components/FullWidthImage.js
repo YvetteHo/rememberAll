@@ -47,8 +47,6 @@ export default class FullWidthImage extends React.Component{
                     size={300}
                     animate="fade"
                     lineNumber={0}
-                    // lineSpacing={5}
-                    // lastLineWidth="30%"
                     onReady={this.state.isReady}
                 >
                     <Image

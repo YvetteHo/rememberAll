@@ -33,12 +33,6 @@ export default class Login extends React.Component{
                 callingCode: '86'
             }
         };
-        this.props.navigation.dispatch(StackActions.reset({
-            index: 0,
-            actions: [
-                NavigationActions.navigate({routeName: 'Drawer'})
-            ],
-        }))
     }
     _getCode = () => {
         setTimeout(() => {
@@ -223,79 +217,77 @@ export default class Login extends React.Component{
 
     render() {
 
-        return(
-            <View></View>
-        )
-        // let headerText = `你的 ${this.state.enterCode ? '验证码' : '电话号码'} 是什么?`
-        // let buttonText = this.state.enterCode ? '进行验证' : '发送验证码';
-        // let textStyle = this.state.enterCode ? {
-        //     height: 50,
-        //     textAlign: 'center',
-        //     fontSize: 40,
-        //     fontWeight: 'bold',
-        //     fontFamily: 'Courier'
-        // } : {};
-        //
-        // return (
-        //
-        //     <View style={styles.container}>
-        //
-        //         <Text style={styles.header}>{headerText}</Text>
-        //
-        //         <Form ref={'form'} style={styles.form}>
-        //
-        //             <View style={this.state.enterCode ? { flexDirection: 'row', justifyContent: 'center'} : { flexDirection: 'row'}}>
-        //
-        //                 {this._renderCountryPicker()}
-        //                 {this._renderCallingCode()}
-        //                 {this.state.enterCode ? (<View style={{ justifyContent: 'center', height: 45}}><CodeInput
-        //                     ref="codeInputRef1"
-        //                     activeColor='#FF5722'
-        //                     inactiveColor='#9e9e9e'
-        //                     // secureTextEntry
-        //                     className={'border-b'}
-        //                     space={6}
-        //                     size={30}
-        //                     inputPosition='left'
-        //                     keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
-        //                     onFulfill={(code) => this._onFulfill(code)}/></View>):<TextInput
-        //                     ref={'textInput'}
-        //                     name={this.state.enterCode ? 'code' : 'phoneNumber' }
-        //                     type={'TextInput'}
-        //                     underlineColorAndroid={'transparent'}
-        //                     autoCapitalize={'none'}
-        //                     autoCorrect={false}
-        //                     onChangeText={this._onChangeText}
-        //                     placeholder={this.state.enterCode ? '_ _ _ _ _ _' : 'Phone Number'}
-        //                     keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
-        //                     style={[ styles.textInput, textStyle ]}
-        //                     returnKeyType='go'
-        //                     autoFocus
-        //                     placeholderTextColor={brandColor}
-        //                     selectionColor={brandColor}
-        //                     maxLength={this.state.enterCode ? 6 : 20}
-        //                     onSubmitEditing={this._getSubmitAction} />}
-        //
-        //
-        //
-        //             </View>
-        //
-        //             <TouchableOpacity style={styles.button} onPress={this._getSubmitAction}>
-        //                 <Text style={styles.buttonText}>{ buttonText }</Text>
-        //             </TouchableOpacity>
-        //
-        //             {this._renderFooter()}
-        //
-        //         </Form>
-        //
-        //         <Spinner
-        //             visible={this.state.spinner}
-        //             textContent={'One moment...'}
-        //             textStyle={{ color: '#fff' }} />
-        //
-        //     </View>
 
-        // );
+        let headerText = `你的 ${this.state.enterCode ? '验证码' : '电话号码'} 是什么?`
+        let buttonText = this.state.enterCode ? '进行验证' : '发送验证码';
+        let textStyle = this.state.enterCode ? {
+            height: 50,
+            textAlign: 'center',
+            fontSize: 40,
+            fontWeight: 'bold',
+            fontFamily: 'Courier'
+        } : {};
+
+        return (
+
+            <View style={styles.container}>
+
+                <Text style={styles.header}>{headerText}</Text>
+
+                <Form ref={'form'} style={styles.form}>
+
+                    <View style={this.state.enterCode ? { flexDirection: 'row', justifyContent: 'center'} : { flexDirection: 'row'}}>
+
+                        {this._renderCountryPicker()}
+                        {this._renderCallingCode()}
+                        {this.state.enterCode ? (<View style={{ justifyContent: 'center', height: 45}}><CodeInput
+                            ref="codeInputRef1"
+                            activeColor='#FF5722'
+                            inactiveColor='#9e9e9e'
+                            // secureTextEntry
+                            className={'border-b'}
+                            space={6}
+                            size={30}
+                            inputPosition='left'
+                            keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
+                            onFulfill={(code) => this._onFulfill(code)}/></View>):<TextInput
+                            ref={'textInput'}
+                            name={this.state.enterCode ? 'code' : 'phoneNumber' }
+                            type={'TextInput'}
+                            underlineColorAndroid={'transparent'}
+                            autoCapitalize={'none'}
+                            autoCorrect={false}
+                            onChangeText={this._onChangeText}
+                            placeholder={this.state.enterCode ? '_ _ _ _ _ _' : 'Phone Number'}
+                            keyboardType={Platform.OS === 'ios' ? 'number-pad' : 'numeric'}
+                            style={[ styles.textInput, textStyle ]}
+                            returnKeyType='go'
+                            autoFocus
+                            placeholderTextColor={brandColor}
+                            selectionColor={brandColor}
+                            maxLength={this.state.enterCode ? 6 : 20}
+                            onSubmitEditing={this._getSubmitAction} />}
+
+
+
+                    </View>
+
+                    <TouchableOpacity style={styles.button} onPress={this._getSubmitAction}>
+                        <Text style={styles.buttonText}>{ buttonText }</Text>
+                    </TouchableOpacity>
+
+                    {this._renderFooter()}
+
+                </Form>
+
+                <Spinner
+                    visible={this.state.spinner}
+                    textContent={'One moment...'}
+                    textStyle={{ color: '#fff' }} />
+
+            </View>
+
+        );
     }
 
 

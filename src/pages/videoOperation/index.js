@@ -86,8 +86,6 @@ export default class VideoOperation extends React.Component {
     toggle = value => () => this.setState(prevState => ({ [value]: !prevState[value] }));
 
     renderCamera() {
-        const { canDetectFaces, canDetectText, canDetectBarcode } = this.state;
-
         return (
 
             <RNCamera
@@ -113,7 +111,6 @@ export default class VideoOperation extends React.Component {
             >
                 <View style={{flex: 1}}/>
                 <View style={{marginHorizontal: 15, flexDirection: 'row'}}>
-                    {/*<Text style={{color: 'black', alignSelf: 'center'}}>{currentTimeString}</Text>*/}
                     <Slider
                         onTouchStart={this.onSliderEditStart}
                         onTouchEnd={this.onSliderEditEnd}

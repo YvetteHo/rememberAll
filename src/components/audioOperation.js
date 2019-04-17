@@ -212,18 +212,14 @@ export default class AudioOperation extends React.Component {
 
     _finishRecording(didSucceed, filePath, fileSize) {
 
-        // this.setState({ finished: didSucceed });
         console.log(`Finished recording of duration ${this.state.currentTime} seconds at path: ${filePath} and size of ${fileSize || 0} bytes`);
     }
 
     componentDidMount() {
         if(Platform.OS === 'android') {
             requestAudioPermission().then(
-
             );
         }
-
-
 
         AudioRecorder.checkAuthorizationStatus().then((isAuthorised) => {
             this.setState({ hasPermission: isAuthorised });
@@ -255,12 +251,6 @@ export default class AudioOperation extends React.Component {
     render() {
         return (
             <SafeAreaView style={styles.container}>
-                    {/*{this._renderButton("RECORD", () => {this._record()}, this.state.recording )}*/}
-                    {/*{this._renderButton("PLAY", () => {this._play()} )}*/}
-
-                    {/*{this._renderButton("STOP", () => {this._stop()} )}*/}
-                    {/*/!* {this._renderButton("PAUSE", () => {this._pause()} )} *!/*/}
-                    {/*{this._renderPauseButton(() => {this.state.paused ? this._resume() : this._pause()})}*/}
                     <Text style={styles.progressText}>{this.state.currentTime}s</Text>
                     <View style={{flex: 1}}/>
                     <View style={styles.footerContainer}>

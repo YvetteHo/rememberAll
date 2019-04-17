@@ -30,18 +30,6 @@ export default class MyVideoPlayer extends Component {
                     duration={this.state.video.duration}
                     ref={r => this.player = r}
                 />
-                {/*<Button*/}
-                {/*    onPress={() => this.player.stop()}*/}
-                {/*    title="Stop"*/}
-                {/*/>*/}
-                {/*<Button*/}
-                {/*    onPress={() => this.player.pause()}*/}
-                {/*    title="Pause"*/}
-                {/*/>*/}
-                {/*<Button*/}
-                {/*    onPress={() => this.player.resume()}*/}
-                {/*    title="Resume"*/}
-                {/*/>*/}
             </View>
         );
     }
