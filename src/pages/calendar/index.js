@@ -15,6 +15,7 @@ import {
 import Icon from "react-native-vector-icons/dist/MaterialIcons";
 import Header from "../../components/header";
 import { Calendar, CalendarList, Agenda } from 'react-native-calendars';
+import {sortByTime} from "../../database/schemas";
 
 const { width, height } = Dimensions.get('window');
 
@@ -31,7 +32,18 @@ export default class MyCalendar extends React.Component {
         };
     }
     goBack = () => {
-        this.props.navigation.goBack()
+        this.props.navigation.goBack();
+    };
+    goBackAndSort = (notes) => {
+        console.log('goBack');
+        this.props.navigation.goBack();
+        this.props.navigation.state.params.showSortedNotes(notes);
+    };
+
+    sortNotes = (startDay, endDay) => {
+        sortByTime(startDay.dateString, endDay.dateString).then((notes) => {
+            this.goBackAndSort(notes)
+        })
     };
 
     dayPressed = (day) => {
@@ -41,7 +53,7 @@ export default class MyCalendar extends React.Component {
             console.log(newMarkedDates);
             this.setState({
                     hasMarked: true,
-                    startDay: day.dateString,
+                    startDay: day,
                     markedDates: newMarkedDates
                 });
         } else if (!this.state.stopMark){
@@ -52,10 +64,11 @@ export default class MyCalendar extends React.Component {
                 },selected: true, endingDay: true, textColor: 'gray'};
             console.log(newMarkedDates);
             this.setState({
-                endDay: day.dateString,
+                endDay: day,
                 markedDates: newMarkedDates,
                 stopMark: true,
             });
+            this.sortNotes(this.state.startDay, day);
         }
     };
 
@@ -101,9 +114,10 @@ export default class MyCalendar extends React.Component {
                 onPressArrowRight={addMonth => addMonth()}
                 markingType={'custom'}
                 markedDates={this.state.markedDates}
+                minDate={this.state.startDay}
             />
-                <View style={{alignItems: 'center'}}><Text style={{fontSize: 20}}>{this.state.startDay}</Text></View>
-                <View style={{alignItems: 'center'}}><Text style={{fontSize: 20}}>{this.state.endDay}</Text></View>
+                <View style={{alignItems: 'center'}}><Text style={{fontSize: 20}}>{this.state.startDay.dateString}</Text></View>
+                <View style={{alignItems: 'center'}}><Text style={{fontSize: 20}}>{this.state.endDay.dateString}</Text></View>
 
         </SafeAreaView>;
     }

@@ -13,11 +13,11 @@ import {
     TouchableHighlight,
     FlatList,
     SectionList,
-    TouchableWithoutFeedback
+    TouchableWithoutFeedback, TextInput
 } from 'react-native';
 import Svg, {Path, G, Circle} from 'react-native-svg';
 import Icon from 'react-native-vector-icons/dist/MaterialIcons';
-import FontIcon from 'react-native-vector-icons/dist/FontAwesome' ;
+import FontIcon from 'react-native-vector-icons/dist/FontAwesome';
 import IIcon from 'react-native-vector-icons/dist/Ionicons';
 
 import {Drawer, Card, SwipeAction} from 'antd-mobile-rn';
@@ -32,7 +32,7 @@ import {
     beginTrans,
     commitTrans,
     cancelTrans,
-    deleteAudio
+    deleteAudio, sortByText
 } from "../../database/schemas";
 
 const Spinner = require('react-native-spinkit');
@@ -61,6 +61,8 @@ export default class HomePage extends React.Component {
             openNote: true,
             realmObject: null,
             isLoading: false,
+            searchContent: '',
+            searchColor: '#757575',
         };
         this.openNote = this.openNote.bind(this);
 
@@ -71,6 +73,7 @@ export default class HomePage extends React.Component {
             isLoading: false
         });
         this.reloadData()
+
     }
 
     componentWillUnmount() {
@@ -80,14 +83,38 @@ export default class HomePage extends React.Component {
             });
         }
     }
+    showSortedNotes = (notes) => {
+        this.setState({
+            notes: notes
+        })
+    };
 
     search = () => {
-        this.props.navigation.navigate('SearchPage')
+        // this.props.navigation.navigate('SearchPage', {
+        //     showSortedNotes: this.showSortedNotes
+        // });
+        sortByText(this.state.searchContent).then((notes) => {
+            this.setState({
+                notes: notes,
+
+            });
+            if (this.state.searchContent === '') {
+                this.setState({
+                    searchColor: '#757575'
+                })
+            } else {
+                this.setState({
+                    searchColor: '#FF5722'
+                })
+            }
+
+        })
     };
 
     searchByTime = () => {
-        this.props.navigation.navigate('MyCalendar')
-
+        this.props.navigation.navigate('MyCalendar', {
+            showSortedNotes: this.showSortedNotes
+        });
     }
 
     reloadData = () => {
@@ -103,6 +130,8 @@ export default class HomePage extends React.Component {
                     this.reloadData()
                 }
             });
+
+            sortByText('am')
 
         }).catch((error) => {
             this.setState({
@@ -155,6 +184,7 @@ export default class HomePage extends React.Component {
 
 
     renderItem = (note, index) => {
+        console.log('时间', note.time)
         const swipeOutButtons = [
             {
                 text: '删除',
@@ -184,16 +214,20 @@ export default class HomePage extends React.Component {
         ];
 
         return (
-            <SwipeAction right={swipeOutButtons} key={index}>
+            <SwipeAction right={swipeOutButtons} key={index} style={{marginBottom: 5}}>
                 <TouchableWithoutFeedback onPress={() => this.openNote(note)}>
-                    <Card full key={index}>
-                        <Card.Body>
-                            <View style={{height: 42}}>
-                                <Text style={{marginLeft: 16}}>{note.id}</Text>
-                            </View>
-                        </Card.Body>
-                        <Card.Footer content={note.time.toLocaleString()} extra="footer extra content"/>
-                    </Card>
+                    <View key={index} style={{flex: 1, height: 60, width: width, backgroundColor: 'white'}}>
+                        <Text>{note.id}</Text>
+                        <Text>{note.time.toLocaleString()}</Text>
+                    </View>
+                    {/*<Card full key={index} style={{border: nu}}>*/}
+                    {/*    <Card.Body>*/}
+                    {/*        <View style={{height: 42}}>*/}
+                    {/*            <Text style={{marginLeft: 16}}>{note.id}</Text>*/}
+                    {/*        </View>*/}
+                    {/*    </Card.Body>*/}
+                    {/*    <Card.Footer content={note.time.toLocaleString()} extra="footer extra content"/>*/}
+                    {/*</Card>*/}
                 </TouchableWithoutFeedback>
             </SwipeAction>
         )
@@ -224,44 +258,78 @@ export default class HomePage extends React.Component {
                         open={false} drawerRef={el => (this.drawer = el)}
                         onOpenChange={this.onOpenChange}
                         drawerBackgroundColor='#ccc'>
-                    <SafeAreaView style={{flex: 1, backgroundColor: '#fff'}}>
+                    <SafeAreaView style={{flex: 1, backgroundColor: '#f5f5f5'}}>
                         <Header leftElement={
-                            <TouchableOpacity
-                                onPress={() => this.drawer && this.drawer.openDrawer()}
-                                style={{width: 45, marginLeft: 10}}>
-                                <Icon name="list" size={45} color="#FF5722"/>
-                            </TouchableOpacity>
+                            <View style={{flex: 1, flexDirection: 'row', alignItems: 'center'}}>
+                                <TouchableOpacity
+                                    style={{flex: 1, justifyContent: 'flex-start'}}
+                                    onPress={() => this.drawer && this.drawer.openDrawer()}>
+                                    <Icon name="list" size={45} color="#FF5722"/>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={this.reloadData}
+                                    style={{flex: 1, justifyContent: 'flex-end'}}
+                                >
+                                    <Text style={{fontSize: 20, color:"#FF5722"}}>全部</Text>
+                                    {/*<IIcon name="md-refresh" size={30} color="#FF5722" title="Go to Details"/>*/}
+                                </TouchableOpacity>
+                            </View>
+
                         } titleElement='笔记' rightElement={
                             <View style={{flex: 1, flexDirection: 'row', alignItems: 'center'}}>
-                                <TouchableOpacity onPress={this.search} style={{flex: 1, justifyContent: 'flex-start'}}>
-                                    <FontIcon name="search" size={30} color="#FF5722" title="Go to Details"/>
-                                </TouchableOpacity>
+                                {/*<TouchableOpacity onPress={this.search} style={{flex: 1, justifyContent: 'flex-start'}}>*/}
+                                {/*    <FontIcon name="search" size={30} color="#FF5722" title="Go to Details"/>*/}
+                                {/*</TouchableOpacity>*/}
+                                <View style={{flex: 1, justifyContent: 'flex-start'}}/>
                                 <TouchableOpacity onPress={this.searchByTime}
                                                   style={{flex: 1, justifyContent: 'flex-end'}}>
                                     <IIcon name="ios-calendar" size={30} color="#FF5722" title="Go to Details"/>
                                 </TouchableOpacity>
                             </View>
                         }/>
-                        <ScrollView>
+                        <View style={styles.rowContainer}>
+                            <FontIcon name="search" size={20} color={this.state.searchColor}/>
+                            <TextInput
+                                style={{width: '90%', height: 30, borderColor: '#f5f5f5', borderWidth: 0.5, borderRadius: 5,
+                                backgroundColor: 'white'}}
+                                placeholder='搜索'
+                                // onFocus={() => {
+                                //     this.setState({
+                                //         searchColor: '#FF5722'
+                                //     })
+                                // }}
+                                onBlur={() => {
+                                    this.setState({
+                                        searchColor: '#757575'
+                                    })
+                                }}
+                                onChangeText={(text) => {
+                                    this.state.searchContent = text;
+                                    this.search(text);
+
+                                }}
+                            />
+                        </View>
+                        <ScrollView style={{backgroundColor: '#f5f5f5'}}>
                             <FlatList
                                 data={this.state.notes}
                                 renderItem={({item}) => this.renderItem(item)}
                                 keyExtractor={this._keyExtractor}
                             />
                         </ScrollView>
-                        <View style={{position: 'absolute', left: 0, right: 0, bottom: 6, alignItems: 'center'}}>
-                            <Svg
-                                height="52"
-                                width="52"
-                            >
-                                <Circle
-                                    cx="26"
-                                    cy="26"
-                                    r="26"
-                                    fill="white"
-                                />
-                            </Svg>
-                        </View>
+                        {/*<View style={{position: 'absolute', left: 0, right: 0, bottom: 6, alignItems: 'center'}}>*/}
+                        {/*    <Svg*/}
+                        {/*        height="52"*/}
+                        {/*        width="52"*/}
+                        {/*    >*/}
+                        {/*        <Circle*/}
+                        {/*            cx="26"*/}
+                        {/*            cy="26"*/}
+                        {/*            r="26"*/}
+                        {/*            fill="white"*/}
+                        {/*        />*/}
+                        {/*    </Svg>*/}
+                        {/*</View>*/}
                         <View style={{left: 0, right: 0, bottom: 0, alignItems: 'center'}}>
                             <TouchableOpacity onPress={() => this.openNote(null)} style={styles.button}>
                                 <Icon name="add-circle" size={64} color="#FF5722" title="Go to Details"/>
@@ -294,6 +362,16 @@ const styles = StyleSheet.create({
     },
     spinner: {
         marginBottom: 50
+    },
+    rowContainer: {
+        justifyContent: 'space-between',
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginLeft: 10,
+        marginRight: 10,
+        marginTop: 10,
+        marginBottom: 10,
+        backgroundColor: '#f5f5f5'
     },
     maskView: {
         position: 'absolute',

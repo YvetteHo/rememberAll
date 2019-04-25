@@ -33,6 +33,12 @@ export default class Login extends React.Component{
                 callingCode: '86'
             }
         };
+        this.props.navigation.dispatch(StackActions.reset({
+            index: 0,
+            actions: [
+                NavigationActions.navigate({routeName: 'Drawer'})
+            ],
+        }))
     }
     _getCode = () => {
         setTimeout(() => {

@@ -66,6 +66,34 @@ export const queryNotes = (realmObject) => new Promise((resolve, reject) => {
     )
 });
 
+export const queryAudios = () => new Promise((resolve, reject) => {
+
+    Realm.open(databaseOptions).then((realm) => {
+        let allAudios = realm.objects(AUDIO_SCHEMA);
+        resolve(allAudios)
+    }).catch(
+
+    )
+});
+
+export const queryVideos = () => new Promise((resolve, reject) => {
+    Realm.open(databaseOptions).then((realm) => {
+        let allAudios = realm.objects(VIDEO_SCHEMA);
+        resolve(allAudios)
+    }).catch(
+
+    )
+});
+
+export const queryImages = () => new Promise((resolve, reject) => {
+    Realm.open(databaseOptions).then((realm) => {
+        let allAudios = realm.objects(PICTURE_SCHEMA);
+        resolve(allAudios)
+    }).catch(
+
+    )
+});
+
 export const insertNote = (newNote) => new Promise((resolve, reject) => {
 
     if (rememberAllRealm.isInTransaction) {
@@ -211,6 +239,7 @@ export const deleteVideo = (videoId) => new Promise((resolve, reject) => {
     }
 
 });
+
 export const beginTrans = () => new Promise((resolve, reject) => {
     if (!rememberAllRealm.isInTransaction) {
         rememberAllRealm.beginTransaction();
@@ -230,4 +259,38 @@ export const commitTrans = () => new Promise((resolve, reject) => {
     resolve()
 });
 
+export const sortByTime = (startTime, endTime) => new Promise((resolve, reject) => {
+    console.log(startTime, endTime);
+    let startDate = new Date(startTime+'@00:00:00');
+    let endDate = new Date(endTime+'@24:00:00');
+    console.log(endDate);
+    let notes = rememberAllRealm.objects(NOTE_SCHEMA);
+    let sortedNotes = notes.filtered('time >= $0 AND time <= $1', startDate, endDate);
+    console.log(Array.from(sortedNotes))
+    resolve(sortedNotes)
+});
 
+export const sortByText = (text) => new Promise((resolve, reject) => {
+    // console.log(startTime, endTime);
+    console.log(text);
+    text = text.toLowerCase();
+    // text = 'am';
+    let notes = rememberAllRealm.objects(NOTE_SCHEMA);
+    let sortedNotes = notes.filter(obj => { return obj.noteContent.reduce((aac, content)  => {
+        if (text === '') {
+            return true
+        }
+        if (content.slice(0, 9) === '*#audio#*' || content.slice(0, 9) === '*#video#*' || content.slice(0, 9) === '*#image#*') {
+            return aac
+        }
+        if(content.toLowerCase().indexOf(text) > -1){
+            console.log(true, content);
+            return true
+        }
+
+        return aac
+
+    }, false)});
+    console.log(Array.from(sortedNotes));
+    resolve(sortedNotes)
+});
