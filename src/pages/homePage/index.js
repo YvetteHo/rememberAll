@@ -20,7 +20,7 @@ import Icon from 'react-native-vector-icons/dist/MaterialIcons';
 import FontIcon from 'react-native-vector-icons/dist/FontAwesome';
 import IIcon from 'react-native-vector-icons/dist/Ionicons';
 
-import {Drawer, Card, SwipeAction} from 'antd-mobile-rn';
+import {Drawer, Card, SwipeAction, Modal} from 'antd-mobile-rn';
 import Header from "../../components/header";
 import {
     insertNote,
@@ -32,7 +32,7 @@ import {
     beginTrans,
     commitTrans,
     cancelTrans,
-    deleteAudio, sortByText
+    deleteAudio, sortByText, updateNote, queryTypes, updateType, updateTypeNotes
 } from "../../database/schemas";
 
 const Spinner = require('react-native-spinkit');
@@ -63,6 +63,7 @@ export default class HomePage extends React.Component {
             isLoading: false,
             searchContent: '',
             searchColor: '#757575',
+            oldType: '',
         };
         this.openNote = this.openNote.bind(this);
 
@@ -131,13 +132,33 @@ export default class HomePage extends React.Component {
                 }
             });
 
-            sortByText('am')
 
         }).catch((error) => {
             this.setState({
                 notes: []
             })
         });
+
+    };
+    setType = (type, note) => {
+        console.log(type);
+        updateType(type.toString(), note.id).then(
+            () => {
+                updateNote({
+                    id: note.id,
+                    name: note.name,
+                    noteType: type,
+                    time: note.time,
+                    noteContent: note.noteContent
+                })
+            }
+        ).catch((error) => {
+            console.log(error)
+        });
+        if (this.state.oldType !== '') {
+            updateTypeNotes(this.state.oldType, note.id)
+        }
+        // console.log(groupName)
     };
 
     openNote = (note) => {
@@ -180,35 +201,54 @@ export default class HomePage extends React.Component {
         this.setState({
             drawerOpen: !this.state.drawerOpen
         })
+        queryTypes().then((types) => {
+            console.log(Array.from(types))
+        }).catch((error) => {
+            console.log(error)
+        });
     };
 
 
     renderItem = (note, index) => {
-        console.log('时间', note.time)
         const swipeOutButtons = [
             {
                 text: '删除',
                 onPress: () => {
-                    Array.from(note.noteContent).forEach((element) => {
-                        if (element.slice(0, 9) === '*#audio#*') {
-                            deleteAudio(element).catch(() => {
-                            })
-                        }
-                    });
-                    deleteNote(note.id).catch(() => {
-                    });
+                    deleteNote(note.id).catch()
                 },
                 style: {color: 'white'},
             }, {
                 text: '重命名',
                 style: {backgroundColor: '#424242', color: 'white'},
                 onPress: () => {
+
                 }
             }, {
                 text: '分组',
                 style: {backgroundColor: '#FF5722', color: 'white'},
                 onPress: () => {
+                    this.setState({
+                        oldType: note.noteType
+                    });
+                    Modal.prompt(
+                        '修改分组',
+                        null,
+                        [
+                            {
+                                text: '不保存',
+                                onPress: this.cancel,
+                                style: 'cancel',
+                            },
+                            {
+                                text: '保存',
+                                onPress: type => this.setType(type, note)
+                            }
 
+                        ],
+                        'default',
+                        note.noteType === ''? '' : note.noteType,
+                        ['输入分组名']
+                    );
                 }
             }
         ];
@@ -220,14 +260,6 @@ export default class HomePage extends React.Component {
                         <Text>{note.id}</Text>
                         <Text>{note.time.toLocaleString()}</Text>
                     </View>
-                    {/*<Card full key={index} style={{border: nu}}>*/}
-                    {/*    <Card.Body>*/}
-                    {/*        <View style={{height: 42}}>*/}
-                    {/*            <Text style={{marginLeft: 16}}>{note.id}</Text>*/}
-                    {/*        </View>*/}
-                    {/*    </Card.Body>*/}
-                    {/*    <Card.Footer content={note.time.toLocaleString()} extra="footer extra content"/>*/}
-                    {/*</Card>*/}
                 </TouchableWithoutFeedback>
             </SwipeAction>
         )
@@ -293,11 +325,6 @@ export default class HomePage extends React.Component {
                                 style={{width: '90%', height: 30, borderColor: '#f5f5f5', borderWidth: 0.5, borderRadius: 5,
                                 backgroundColor: 'white'}}
                                 placeholder='搜索'
-                                // onFocus={() => {
-                                //     this.setState({
-                                //         searchColor: '#FF5722'
-                                //     })
-                                // }}
                                 onBlur={() => {
                                     this.setState({
                                         searchColor: '#757575'
