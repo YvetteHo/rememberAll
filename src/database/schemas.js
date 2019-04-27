@@ -58,33 +58,33 @@ const databaseOptions = {
     path: 'rememberAll.realm',
     schema: [NoteSchema, AudioSchema, PictureSchema, VideoSchema, TypeSchema]
 };
+export const buildRealm = () => new Promise((resolve, reject) =>{
+        Realm.open(databaseOptions).then((realm) => {
+            rememberAllRealm = realm;
+            resolve(realm);
+        });
+
+    });
 
 export const queryNotes = (realmObject) => new Promise((resolve, reject) => {
     if (realmObject) {
-        rememberAllRealm = realmObject;
         let allNotes = realmObject.objects(NOTE_SCHEMA);
         resolve(allNotes)
-    }
-    Realm.open(databaseOptions).then((realm) => {
-        rememberAllRealm = realm;
-        let allNotes = realm.objects(NOTE_SCHEMA);
+    } else {
+        let allNotes = rememberAllRealm.objects(NOTE_SCHEMA);
         resolve(allNotes)
-    }).catch(
+    }
 
-    )
+
 });
 
 export const queryTypes = () => new Promise((resolve, reject) => {
-    rememberAllRealm.write(() => {
         let allTypes = rememberAllRealm.objects(TYPE_SCHEMA);
         resolve(allTypes)
-    })
-
 });
 
 export const updateType = (type, noteId) => new Promise((resolve, reject) => {
 
-        rememberAllRealm.write(() => {
             let result = Array.from(rememberAllRealm.objects(TYPE_SCHEMA).filtered('type == $0', type));
             console.log('result', Array.from(result));
             if (result.length === 0) {
@@ -95,7 +95,6 @@ export const updateType = (type, noteId) => new Promise((resolve, reject) => {
                 updatingType.notes.push(noteId);
             }
             resolve()
-        })
 
 });
 
@@ -206,12 +205,9 @@ export const updateNote = (note) => new Promise((resolve, reject) => {
             resolve();
         })
     }
-
 });
 
 export const deleteNote = (noteId) => new Promise((resolve, reject) => {
-
-        rememberAllRealm.write(() => {
             let deletingNote = rememberAllRealm.objectForPrimaryKey(NOTE_SCHEMA, noteId);
             deletingNote.noteContent.forEach((value) => {
                 let contentType = value.slice(0, 9);
@@ -235,10 +231,13 @@ export const deleteNote = (noteId) => new Promise((resolve, reject) => {
                         return;
                 }
             });
-            updateTypeNotes(deletingNote.noteType, noteId);
+            if (deletingNote.noteType !== '') {
+                updateTypeNotes(deletingNote.noteType, noteId).catch((error) => {
+                    console.log(error)
+                });
+            }
             rememberAllRealm.delete(deletingNote);
             resolve();
-        })
 });
 
 export const insertAudio = (newAudio) => new Promise((resolve, reject) => {
@@ -274,7 +273,6 @@ export const deleteAudio = (audioId) => new Promise((resolve, reject) => {
 
 });
 export const insertType = (type, noteId) => new Promise((resolve, reject) => {
-
         rememberAllRealm.create(TYPE_SCHEMA, {type: type, notes: [noteId]});
         resolve();
 });
@@ -364,14 +362,26 @@ export const commitTrans = () => new Promise((resolve, reject) => {
 
 export const sortByTime = (startTime, endTime) => new Promise((resolve, reject) => {
     console.log(startTime, endTime);
-    let startDate = new Date(startTime+'@00:00:00');
-    let endDate = new Date(endTime+'@24:00:00');
+    let startDate = new Date(startTime+'T00:00:00');
+    let endDate = new Date(endTime+'T24:00:00');
     console.log(endDate);
     let notes = rememberAllRealm.objects(NOTE_SCHEMA);
     let sortedNotes = notes.filtered('time >= $0 AND time <= $1', startDate, endDate);
-    console.log(Array.from(sortedNotes))
+    console.log(Array.from(sortedNotes));
     resolve(sortedNotes)
 });
+
+export const sortById = (notes) => new Promise((resolve, reject) => {
+    let result = [];
+    notes.forEach((id, index) => {
+        let note = rememberAllRealm.objectForPrimaryKey(NOTE_SCHEMA, id);
+        console.log(note);
+        result.push(note);
+    });
+    console.log(result);
+    resolve(result);
+});
+
 
 export const sortByText = (text) => new Promise((resolve, reject) => {
     // console.log(startTime, endTime);

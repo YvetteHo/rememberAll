@@ -32,8 +32,15 @@ import {
     beginTrans,
     commitTrans,
     cancelTrans,
-    deleteAudio, sortByText, updateNote, queryTypes, updateType, updateTypeNotes
+    deleteAudio,
+    sortByText,
+    updateNote,
+    queryTypes,
+    updateType,
+    updateTypeNotes,
+    buildRealm, sortById
 } from "../../database/schemas";
+import SideBar from "../../components/sideBar";
 
 const Spinner = require('react-native-spinkit');
 const uuid = require('uuid/v1');
@@ -64,6 +71,7 @@ export default class HomePage extends React.Component {
             searchContent: '',
             searchColor: '#757575',
             oldType: '',
+            types: [],
         };
         this.openNote = this.openNote.bind(this);
 
@@ -73,9 +81,30 @@ export default class HomePage extends React.Component {
         this.setState({
             isLoading: false
         });
-        this.reloadData()
+        buildRealm().then((realmObject) => {
+            queryNotes(realmObject).then((notes) => {
+                this.setState({
+                    notes: notes,
+                    realmObject: rememberAllRealm,
+                    isLoading: false
+                });
+                queryTypes().then((types) => {
+                    this.setState({
+                        types: types
+                    });
+                }).catch((error) => {
+                    console.log(error)
+                });
+                rememberAllRealm.addListener('change', () => {
+                    if (!rememberAllRealm.isInTransaction) {
+                        this.reloadData();
+                        console.log('change');
+                    }
+                });
 
-    }
+            });
+
+    })}
 
     componentWillUnmount() {
         if (rememberAllRealm.isInTransaction) {
@@ -116,21 +145,17 @@ export default class HomePage extends React.Component {
         this.props.navigation.navigate('MyCalendar', {
             showSortedNotes: this.showSortedNotes
         });
-    }
+    };
 
     reloadData = () => {
-        queryNotes(this.state.realmObject).then((notes) => {
+        queryNotes().then((notes) => {
             this.setState({
                 notes: notes,
                 realmObject: rememberAllRealm,
                 isLoading: false
             });
 
-            rememberAllRealm.addListener('change', () => {
-                if (!rememberAllRealm.isInTransaction) {
-                    this.reloadData()
-                }
-            });
+
 
 
         }).catch((error) => {
@@ -138,10 +163,18 @@ export default class HomePage extends React.Component {
                 notes: []
             })
         });
+        queryTypes().then((types) => {
+            this.setState({
+                types: types
+            });
+        }).catch((error) => {
+            console.log(error)
+        });
 
     };
     setType = (type, note) => {
         console.log(type);
+        beginTrans();
         updateType(type.toString(), note.id).then(
             () => {
                 updateNote({
@@ -155,9 +188,16 @@ export default class HomePage extends React.Component {
         ).catch((error) => {
             console.log(error)
         });
+        commitTrans();
         if (this.state.oldType !== '') {
-            updateTypeNotes(this.state.oldType, note.id)
+            beginTrans();
+            updateTypeNotes(this.state.oldType, note.id).then(()=>{
+                commitTrans()
+            }).catch(() => {
+                cancelTrans()
+            })
         }
+
         // console.log(groupName)
     };
 
@@ -200,32 +240,24 @@ export default class HomePage extends React.Component {
         /* tslint:disable: no-console */
         this.setState({
             drawerOpen: !this.state.drawerOpen
-        })
-        queryTypes().then((types) => {
-            console.log(Array.from(types))
-        }).catch((error) => {
-            console.log(error)
         });
+
     };
 
 
     renderItem = (note, index) => {
         const swipeOutButtons = [
             {
-                text: '删除',
-                onPress: () => {
-                    deleteNote(note.id).catch()
-                },
-                style: {color: 'white'},
-            }, {
                 text: '重命名',
-                style: {backgroundColor: '#424242', color: 'white'},
+                style: {color: 'white'},
+
                 onPress: () => {
 
                 }
             }, {
                 text: '分组',
-                style: {backgroundColor: '#FF5722', color: 'white'},
+                style: {backgroundColor: '#424242', color: 'white'},
+
                 onPress: () => {
                     this.setState({
                         oldType: note.noteType
@@ -250,6 +282,18 @@ export default class HomePage extends React.Component {
                         ['输入分组名']
                     );
                 }
+            }, {
+                text: '删除',
+                onPress: () => {
+                    beginTrans();
+                    deleteNote(note.id).then(() => {
+                        commitTrans();
+                    }).catch((error) => {
+                        console.log(error);
+                        cancelTrans();
+                    })
+                },
+                style: {backgroundColor: '#FF5722', color: 'white'},
             }
         ];
 
@@ -265,19 +309,52 @@ export default class HomePage extends React.Component {
         )
 
     };
+    renderSideItem = (item, index) => {
+        let colors = ['#f44336', '#ff9800', '#ffeb3b', '#8bc34a', '#03a9f4'];
+
+        console.log(item.type, index);
+        return (
+            <TouchableOpacity>
+                <View style={styles.typesContainer}>
+                    <IIcon name="ios-bookmark" size={45} color={colors[index]}/>
+                    <Text style={{flex: 1, marginLeft: 10}}>{item.type}</Text>
+                    <Text style={{justifyContent: 'flex-end'}}>{item.notes.length}</Text>
+                </View>
+            </TouchableOpacity>
+        )
+    };
+    selectType = (type) => {
+        let notes = Array.from(sortById(type.notes));
+        sortById(type.notes).then((notes) => {
+            this.setState({
+                notes: notes
+            })
+            this.drawer && this.drawer.closeDrawer();
+        }).catch((error) => {
+            console.log(error)
+        })
+
+        // console.log(Array.from(type.notes));
+    };
 
 
     _keyExtractor = (item) => item.id;
-
+    _keyExtractorForSideBar = (item, index) => item.type;
     render() {
         navigator = this.props.navigation;
-        const sidebar = (
-            <SafeAreaView style={{flex: 1, backgroundColor: '#fff'}}>
-                <ScrollView style={{backgroundColor: 'white'}}>
-                    <Text>侧边栏</Text>
-                </ScrollView>
-            </SafeAreaView>
-        );
+        console.log('sidebar');
+
+        const sidebar = <SideBar types={this.state.types} selectType={(type) => {this.selectType(type)}}/>;
+            {/*<SafeAreaView style={{flex: 1, backgroundColor: '#fff'}}>*/}
+            {/*    <ScrollView style={{backgroundColor: 'white'}}>*/}
+            {/*        <FlatList*/}
+            {/*            data={this.state.types}*/}
+            {/*            renderItem={({item, index}) => this.renderSideItem(item, index)}*/}
+            {/*            keyExtractor={this._keyExtractorForSideBar}*/}
+            {/*        />*/}
+            {/*    </ScrollView>*/}
+            {/*</SafeAreaView>*/}
+
 
         return (
             <View style={styles.container}>
@@ -399,6 +476,17 @@ const styles = StyleSheet.create({
         marginTop: 10,
         marginBottom: 10,
         backgroundColor: '#f5f5f5'
+    },
+    typesContainer: {
+        // justifyContent: 'space-between',
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginLeft: 10,
+        marginRight: 30,
+        marginTop: 10,
+        marginBottom: 10,
+        // backgroundColor: '#f5f5f5'
     },
     maskView: {
         position: 'absolute',

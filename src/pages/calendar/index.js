@@ -116,8 +116,8 @@ export default class MyCalendar extends React.Component {
                 markedDates={this.state.markedDates}
                 minDate={this.state.startDay}
             />
-                <View style={{alignItems: 'center'}}><Text style={{fontSize: 20}}>{this.state.startDay.dateString}</Text></View>
-                <View style={{alignItems: 'center'}}><Text style={{fontSize: 20}}>{this.state.endDay.dateString}</Text></View>
+                {/*<View style={{alignItems: 'center'}}><Text style={{fontSize: 20}}>{this.state.startDay.dateString}</Text></View>*/}
+                {/*<View style={{alignItems: 'center'}}><Text style={{fontSize: 20}}>{this.state.endDay.dateString}</Text></View>*/}
 
         </SafeAreaView>;
     }
