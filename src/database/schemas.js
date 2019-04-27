@@ -67,12 +67,25 @@ export const buildRealm = () => new Promise((resolve, reject) =>{
     });
 
 export const queryNotes = (realmObject) => new Promise((resolve, reject) => {
+    let skeletons = [];
     if (realmObject) {
         let allNotes = realmObject.objects(NOTE_SCHEMA);
-        resolve(allNotes)
+        allNotes.forEach((value) => {
+            showNotesSkeleton(value).then((result) => {
+                skeletons.push(result);
+                resolve({notes: allNotes, skeletons: skeletons})
+            })
+        });
+
+
     } else {
         let allNotes = rememberAllRealm.objects(NOTE_SCHEMA);
-        resolve(allNotes)
+        allNotes.forEach((value) => {
+            showNotesSkeleton(value).then((result) => {
+                skeletons.push(result);
+                resolve({notes: allNotes, skeletons: skeletons})
+            })
+        });
     }
 
 
@@ -383,12 +396,12 @@ export const sortById = (notes) => new Promise((resolve, reject) => {
 });
 
 
-export const sortByText = (text) => new Promise((resolve, reject) => {
+export const sortByText = (notes, text) => new Promise((resolve, reject) => {
     // console.log(startTime, endTime);
     console.log(text);
     text = text.toLowerCase();
     // text = 'am';
-    let notes = rememberAllRealm.objects(NOTE_SCHEMA);
+    // let notes = rememberAllRealm.objects(NOTE_SCHEMA);
     let sortedNotes = notes.filter(obj => { return obj.noteContent.reduce((aac, content)  => {
         if (text === '') {
             return true
@@ -408,3 +421,32 @@ export const sortByText = (text) => new Promise((resolve, reject) => {
     resolve(sortedNotes)
 });
 
+export const showNotesSkeleton = (note) => new Promise((resolve, reject) => {
+    let result = {text: '', audio: false, video: false, image: ''};
+    note.noteContent.forEach((value, index) => {
+        let contentType = value.slice(0, 9);
+        if (result.text !== '' && result.audio && result.video && result.image) {
+            return;
+        }
+        switch (contentType) {
+            case '*#audio#*':
+                result.audio = true;
+                return;
+            case '*#image#*':
+                if (result.image === '') {
+                    result.image = value.substr(9);
+                }
+                return;
+            case '*#video#*':
+                result.video = true;
+                return;
+            default:
+                if (result.text === '') {
+                    result.text = value;
+                }
+                return;
+        }
+    });
+    console.log(result);
+    resolve(result);
+});

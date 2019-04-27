@@ -38,7 +38,7 @@ import {
     queryTypes,
     updateType,
     updateTypeNotes,
-    buildRealm, sortById
+    buildRealm, sortById, showNotesSkeleton
 } from "../../database/schemas";
 import SideBar from "../../components/sideBar";
 
@@ -72,6 +72,8 @@ export default class HomePage extends React.Component {
             searchColor: '#757575',
             oldType: '',
             types: [],
+            notesOnSearch: [],
+            notesSkeleton: []
         };
         this.openNote = this.openNote.bind(this);
 
@@ -82,11 +84,16 @@ export default class HomePage extends React.Component {
             isLoading: false
         });
         buildRealm().then((realmObject) => {
-            queryNotes(realmObject).then((notes) => {
+            queryNotes(realmObject).then((result) => {
+                let notes = result.notes;
+                let skeletons = result.skeletons;
+
                 this.setState({
+                    notesOnSearch: notes,
                     notes: notes,
                     realmObject: rememberAllRealm,
-                    isLoading: false
+                    isLoading: false,
+                    notesSkeleton: skeletons
                 });
                 queryTypes().then((types) => {
                     this.setState({
@@ -115,26 +122,25 @@ export default class HomePage extends React.Component {
     }
     showSortedNotes = (notes) => {
         this.setState({
+            notesOnSearch: notes,
             notes: notes
         })
     };
 
     search = () => {
-        // this.props.navigation.navigate('SearchPage', {
-        //     showSortedNotes: this.showSortedNotes
-        // });
-        sortByText(this.state.searchContent).then((notes) => {
+
+        sortByText(this.state.notesOnSearch, this.state.searchContent).then((notes) => {
             this.setState({
                 notes: notes,
-
             });
             if (this.state.searchContent === '') {
                 this.setState({
-                    searchColor: '#757575'
+                    searchColor: '#757575',
                 })
             } else {
                 this.setState({
-                    searchColor: '#FF5722'
+                    searchColor: '#FF5722',
+
                 })
             }
 
@@ -148,15 +154,16 @@ export default class HomePage extends React.Component {
     };
 
     reloadData = () => {
-        queryNotes().then((notes) => {
+        queryNotes().then((result) => {
+            let notes = result.notes;
+            let skeletons = result.skeletons;
             this.setState({
+                notesOnSearch: notes,
                 notes: notes,
                 realmObject: rememberAllRealm,
-                isLoading: false
+                isLoading: false,
+                notesSkeleton: skeletons
             });
-
-
-
 
         }).catch((error) => {
             this.setState({
@@ -246,6 +253,9 @@ export default class HomePage extends React.Component {
 
 
     renderItem = (note, index) => {
+        console.log(index)
+        let result = {text: '', audio: false, video: false, image: false}
+
         const swipeOutButtons = [
             {
                 text: '重命名',
@@ -296,13 +306,26 @@ export default class HomePage extends React.Component {
                 style: {backgroundColor: '#FF5722', color: 'white'},
             }
         ];
-
+        let skeleton = this.state.notesSkeleton[index];
+        console.log(skeleton);
         return (
             <SwipeAction right={swipeOutButtons} key={index} style={{marginBottom: 5}}>
                 <TouchableWithoutFeedback onPress={() => this.openNote(note)}>
-                    <View key={index} style={{flex: 1, height: 60, width: width, backgroundColor: 'white'}}>
-                        <Text>{note.id}</Text>
-                        <Text>{note.time.toLocaleString()}</Text>
+                    <View key={index} style={[styles.noteContainer2, {flex: 1, height: 60, width: width, backgroundColor: 'white'}]}>
+                        <View style={styles.noteContainer}>
+                            <Text style={{flex: 1}}>{skeleton.text}</Text>
+                            <View style={styles.rowContainer}>
+                                <Text>{note.time.toLocaleString()}</Text>
+                                {skeleton.audio ? <Icon name="mic" size={15} color="#FF5722"/> : <View/>}
+                                {skeleton.video ? <Icon name="videocam" size={15} color="#FF5722"/> : <View/>}
+                            </View>
+                        </View>
+                        {skeleton.image !== '' ? <Image
+                            key={index}
+                            source={{uri: skeleton.image}}
+                            style={{width: 50, height: 50, justifyContent: 'flex-end', marginRight: 10, resizeMode: 'cover'}}
+                        /> : <View/>}
+
                     </View>
                 </TouchableWithoutFeedback>
             </SwipeAction>
@@ -327,6 +350,7 @@ export default class HomePage extends React.Component {
         let notes = Array.from(sortById(type.notes));
         sortById(type.notes).then((notes) => {
             this.setState({
+                notesOnSearch: notes,
                 notes: notes
             })
             this.drawer && this.drawer.closeDrawer();
@@ -338,7 +362,7 @@ export default class HomePage extends React.Component {
     };
 
 
-    _keyExtractor = (item) => item.id;
+    _keyExtractor = (item, index) => item.id;
     _keyExtractorForSideBar = (item, index) => item.type;
     render() {
         navigator = this.props.navigation;
@@ -396,7 +420,7 @@ export default class HomePage extends React.Component {
                                 </TouchableOpacity>
                             </View>
                         }/>
-                        <View style={styles.rowContainer}>
+                        <View style={styles.searchContainer}>
                             <FontIcon name="search" size={20} color={this.state.searchColor}/>
                             <TextInput
                                 style={{width: '90%', height: 30, borderColor: '#f5f5f5', borderWidth: 0.5, borderRadius: 5,
@@ -404,7 +428,7 @@ export default class HomePage extends React.Component {
                                 placeholder='搜索'
                                 onBlur={() => {
                                     this.setState({
-                                        searchColor: '#757575'
+                                        searchColor: '#757575',
                                     })
                                 }}
                                 onChangeText={(text) => {
@@ -417,7 +441,7 @@ export default class HomePage extends React.Component {
                         <ScrollView style={{backgroundColor: '#f5f5f5'}}>
                             <FlatList
                                 data={this.state.notes}
-                                renderItem={({item}) => this.renderItem(item)}
+                                renderItem={({item, index}) => this.renderItem(item, index)}
                                 keyExtractor={this._keyExtractor}
                             />
                         </ScrollView>
@@ -467,7 +491,7 @@ const styles = StyleSheet.create({
     spinner: {
         marginBottom: 50
     },
-    rowContainer: {
+    searchContainer: {
         justifyContent: 'space-between',
         flexDirection: 'row',
         alignItems: 'center',
@@ -476,6 +500,16 @@ const styles = StyleSheet.create({
         marginTop: 10,
         marginBottom: 10,
         backgroundColor: '#f5f5f5'
+    },
+    rowContainer: {
+        justifyContent: 'space-between',
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    noteContainer2: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     typesContainer: {
         // justifyContent: 'space-between',
@@ -486,6 +520,18 @@ const styles = StyleSheet.create({
         marginRight: 30,
         marginTop: 10,
         marginBottom: 10,
+        // backgroundColor: '#f5f5f5'
+    },
+    noteContainer: {
+        // justifyContent: 'space-between',
+        flex: 1,
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        marginLeft: 10,
+        marginRight: 10,
+        marginTop: 10,
+        marginBottom: 10,
+        width: '80%'
         // backgroundColor: '#f5f5f5'
     },
     maskView: {
