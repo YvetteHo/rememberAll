@@ -26,7 +26,7 @@ import {
     updateNote,
     deleteAudio,
     cancelTrans,
-    commitTrans, deletePicture, insertPicture, deleteVideo,
+    commitTrans, deletePicture, insertPicture, deleteVideo, showNotesSkeleton,
 } from "../../database/schemas";
 import Sound from "react-native-sound";
 import FullWidthImage from "../../components/FullWidthImage";
@@ -105,7 +105,24 @@ export default class NewNote extends React.Component {
             change: true
         })
     };
-
+    postData = (url, data) => {
+        // Default options are marked with *
+        return fetch(url, {
+            body: data, // must match 'Content-Type' header
+            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+            credentials: 'same-origin', // include, same-origin, *omit
+            headers: {
+                'content-type': 'multipart/form-data'
+            },
+            method: 'POST', // *GET, POST, PUT, DELETE, etc.
+            mode: 'cors', // no-cors, cors, *same-origin
+            redirect: 'follow', // manual, *follow, error
+            referrer: 'no-referrer', // *client, no-referrer
+        })
+            .then(response => {
+                console.log(response)
+            }) // parses response to JSON
+    };
     cameraClicked = () => {
         ImagePicker.showImagePicker(options, (response) => {
             console.log('Response = ', response);
@@ -120,7 +137,21 @@ export default class NewNote extends React.Component {
 
                 // You can also display the image using data:
                 // const source = { uri: 'data:image/jpeg;base64,' + response.data };
+                let formData = new FormData();
+                let file = {
+                    uri: response.uri,
+                    type: 'image/jpeg',
+                    name: 'test.jpg',
+                };
 
+                formData.append('file', file);
+                formData.append('remark', 'test');
+
+                this.postData('http://127.0.0.1:8000/files/', formData).then(response => {
+                    console.log(response)
+                }).catch((error) => {
+                    console.log(terror)
+                })
                 this.setState({
                     newPicture: {uri: response.uri},
                 });
@@ -189,12 +220,15 @@ export default class NewNote extends React.Component {
         this.setState({
             isLoading: true
         });
+        let skeleton = [];
+
         updateNote({
             id: note.id,
             name: name || note.name,
             noteType: note.noteType,
             time: note.time,
-            noteContent: this.state.noteContent
+            noteContent: this.state.noteContent,
+            noteSkeleton: skeleton
         }).then(() => {
             commitTrans().then(() => {
                 this.setState({

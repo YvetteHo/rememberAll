@@ -19,26 +19,23 @@ import Svg, {Path, G, Circle} from 'react-native-svg';
 import Icon from 'react-native-vector-icons/dist/MaterialIcons';
 import FontIcon from 'react-native-vector-icons/dist/FontAwesome';
 import IIcon from 'react-native-vector-icons/dist/Ionicons';
+import {getData, postData} from '../../components/http';
 
-import {Drawer, Card, SwipeAction, Modal} from 'antd-mobile-rn';
+import {Drawer, Card, SwipeAction, Modal, Button} from 'antd-mobile-rn';
 import Header from "../../components/header";
 import {
     insertNote,
-    NoteSchema,
-    AudioSchema,
     queryNotes,
     deleteNote,
-    rememberAllRealm,
     beginTrans,
     commitTrans,
     cancelTrans,
-    deleteAudio,
     sortByText,
     updateNote,
     queryTypes,
     updateType,
     updateTypeNotes,
-    buildRealm, sortById, showNotesSkeleton
+    buildRealm, sortById, showNotesSkeleton, sortByMediaType,rememberAllRealm
 } from "../../database/schemas";
 import SideBar from "../../components/sideBar";
 
@@ -73,45 +70,52 @@ export default class HomePage extends React.Component {
             oldType: '',
             types: [],
             notesOnSearch: [],
-            notesSkeleton: []
         };
         this.openNote = this.openNote.bind(this);
 
     }
 
     componentDidMount() {
+        getData('http://127.0.0.1:8000/users', {'userId': 'ab46f6c2-72e2-11e9-a61d-acde48001122'}).then(
+            (response) => {
+                response.json().then((response) => {
+                    console.log(response)
+                    buildRealm().then(() => {
+
+                        queryNotes().then((notes) => {
+                            this.setState({
+                                notesOnSearch: notes,
+                                notes: notes,
+                                isLoading: false,
+                            });
+                            console.log(Array.from(notes))
+                            queryTypes().then((types) => {
+                                this.setState({
+                                    types: types
+                                });
+                            }).catch((error) => {
+                                console.log(error)
+                            });
+                            rememberAllRealm.addListener('change', () => {
+                                if (!rememberAllRealm.isInTransaction) {
+                                    this.reloadData();
+                                    console.log('change');
+                                }
+                            });
+
+                        });
+
+                    })
+                })
+
+            }
+        );
+
         this.setState({
             isLoading: false
         });
-        buildRealm().then((realmObject) => {
-            queryNotes(realmObject).then((result) => {
-                let notes = result.notes;
-                let skeletons = result.skeletons;
 
-                this.setState({
-                    notesOnSearch: notes,
-                    notes: notes,
-                    realmObject: rememberAllRealm,
-                    isLoading: false,
-                    notesSkeleton: skeletons
-                });
-                queryTypes().then((types) => {
-                    this.setState({
-                        types: types
-                    });
-                }).catch((error) => {
-                    console.log(error)
-                });
-                rememberAllRealm.addListener('change', () => {
-                    if (!rememberAllRealm.isInTransaction) {
-                        this.reloadData();
-                        console.log('change');
-                    }
-                });
-
-            });
-
-    })}
+    }
 
     componentWillUnmount() {
         if (rememberAllRealm.isInTransaction) {
@@ -154,18 +158,16 @@ export default class HomePage extends React.Component {
     };
 
     reloadData = () => {
-        queryNotes().then((result) => {
-            let notes = result.notes;
-            let skeletons = result.skeletons;
+        queryNotes().then((notes) => {
+
             this.setState({
                 notesOnSearch: notes,
                 notes: notes,
-                realmObject: rememberAllRealm,
                 isLoading: false,
-                notesSkeleton: skeletons
             });
 
         }).catch((error) => {
+            console.log(error);
             this.setState({
                 notes: []
             })
@@ -180,32 +182,28 @@ export default class HomePage extends React.Component {
 
     };
     setType = (type, note) => {
-        console.log(type);
-        beginTrans();
-        updateType(type.toString(), note.id).then(
-            () => {
+        beginTrans().then(
+            updateType(type.toString(), note.id).then(() => {
                 updateNote({
                     id: note.id,
                     name: note.name,
                     noteType: type,
                     time: note.time,
-                    noteContent: note.noteContent
+                    noteContent: note.noteContent,
+                    noteSkeleton: note.noteSkeleton
+                }).then(() => {
+                    if (this.state.oldType !== '') {
+                        updateTypeNotes(this.state.oldType, note.id).then(() => {
+                            commitTrans()
+                        })
+                    } else {
+                        commitTrans();
+                    }
                 })
-            }
-        ).catch((error) => {
-            console.log(error)
-        });
-        commitTrans();
-        if (this.state.oldType !== '') {
-            beginTrans();
-            updateTypeNotes(this.state.oldType, note.id).then(()=>{
-                commitTrans()
             }).catch(() => {
                 cancelTrans()
             })
-        }
-
-        // console.log(groupName)
+        );
     };
 
     openNote = (note) => {
@@ -213,17 +211,31 @@ export default class HomePage extends React.Component {
             openNote: true
         });
 
+
         beginTrans().catch(() => {
 
         });
 
-        if (note) {
 
+        if (note) {
             this.props.navigation.navigate('NewNote', {
                 note: note,
                 isNew: false,
             })
         } else {
+            postData('http://127.0.0.1:8000/notes/', {
+                id: '',
+                name: '',
+                time: new Date(),
+                noteType: '',
+                noteContent: JSON.stringify([]),
+                noteSkeleton: JSON.stringify([]),
+                user: 'http://127.0.0.1:8000/users/771dbc34-7335-11e9-8e7a-acde48001122/',
+            }).then((response) => {
+                response.json().then(response => {
+                    console.log(response)
+                })
+            });
             const newNote = {
                 id: uuid(),
                 name: '',
@@ -253,9 +265,6 @@ export default class HomePage extends React.Component {
 
 
     renderItem = (note, index) => {
-        console.log(index)
-        let result = {text: '', audio: false, video: false, image: false}
-
         const swipeOutButtons = [
             {
                 text: '重命名',
@@ -296,33 +305,46 @@ export default class HomePage extends React.Component {
                 text: '删除',
                 onPress: () => {
                     beginTrans();
+
                     deleteNote(note.id).then(() => {
                         commitTrans();
+
                     }).catch((error) => {
                         console.log(error);
                         cancelTrans();
+
                     })
                 },
                 style: {backgroundColor: '#FF5722', color: 'white'},
             }
         ];
-        let skeleton = this.state.notesSkeleton[index];
-        console.log(skeleton);
+
+        let types = this.state.types.map((value, index) => {
+            return value.type
+        });
+
+        let typeIndex = types.indexOf(note.noteType);
+        console.log(types, typeIndex)
+        let colors = ['#f44336', '#ff9800', '#ffeb3b', '#8bc34a', '#03a9f4'];
+
         return (
             <SwipeAction right={swipeOutButtons} key={index} style={{marginBottom: 5}}>
                 <TouchableWithoutFeedback onPress={() => this.openNote(note)}>
                     <View key={index} style={[styles.noteContainer2, {flex: 1, height: 60, width: width, backgroundColor: 'white'}]}>
                         <View style={styles.noteContainer}>
-                            <Text style={{flex: 1}}>{skeleton.text}</Text>
+                            <View style={styles.rowContainer}>
+                                <Text style={{marginRight: 10}}>{note.noteSkeleton[0]}</Text>
+                                {typeIndex !== -1 ? <IIcon name="ios-bookmark" size={15} color={colors[typeIndex]}/> : <View/>}
+                                    </View>
                             <View style={styles.rowContainer}>
                                 <Text>{note.time.toLocaleString()}</Text>
-                                {skeleton.audio ? <Icon name="mic" size={15} color="#FF5722"/> : <View/>}
-                                {skeleton.video ? <Icon name="videocam" size={15} color="#FF5722"/> : <View/>}
+                                {note.noteSkeleton[1] === 'true' ? <Icon name="mic" size={15} color="#FF5722"/> : <View/>}
+                                {note.noteSkeleton[2] === 'true' ? <Icon name="videocam" size={15} color="#FF5722"/> : <View/>}
                             </View>
                         </View>
-                        {skeleton.image !== '' ? <Image
+                        {note.noteSkeleton[3] !== '' ? <Image
                             key={index}
-                            source={{uri: skeleton.image}}
+                            source={{uri: note.noteSkeleton[3]}}
                             style={{width: 50, height: 50, justifyContent: 'flex-end', marginRight: 10, resizeMode: 'cover'}}
                         /> : <View/>}
 
@@ -335,7 +357,6 @@ export default class HomePage extends React.Component {
     renderSideItem = (item, index) => {
         let colors = ['#f44336', '#ff9800', '#ffeb3b', '#8bc34a', '#03a9f4'];
 
-        console.log(item.type, index);
         return (
             <TouchableOpacity>
                 <View style={styles.typesContainer}>
@@ -360,15 +381,79 @@ export default class HomePage extends React.Component {
 
         // console.log(Array.from(type.notes));
     };
+    selectByMedia = (type) => {
+        sortByMediaType(type).then((notes) => {
+            console.log(notes);
+            this.setState({
+                notes: notes,
+                notesOnSearch: notes
+            });
+            // console.log(Array.from(notes.noteSkeleton))
+            this.drawer && this.drawer.closeDrawer();
+        })
+    };
+// `http://127.0.0.1:8000/user/?id=${userId}`
+    fetch = () => {
+        // this.getData('http://127.0.0.1:8000/users', {'userId': '2'})
+        // this.postData('http://127.0.0.1:8000/users/', {
+        //     "id": 'ab46f6c2-72e2-11e9-a61d-acde48001122',
+        //     "name": '1',
+        //     "password": '234',
+        // })
 
+        // this.getData('http://127.0.0.1:8000/notes/1', {})
+
+
+    };
+    // fetchUserById = () => {
+    //     fetch('http://127.0.0.1:8000/users', {
+    //         method: 'GET',
+    //         headers: {
+    //             'userId': '2'
+    //         }
+    //     }).then((response) => {
+    //         console.log(response)
+    //     })
+    // };
+
+    // getData = (url, header) => {
+    //     fetch(url, {
+    //         method: 'GET',
+    //         headers: header
+    //     }).then((response) => {
+    //         console.log(response)
+    //     }).catch((error) => {
+    //         console.log(error)
+    //     })
+    // };
+
+    postData = (url, data) => {
+        // Default options are marked with *
+        return fetch(url, {
+            body: JSON.stringify(data), // must match 'Content-Type' header
+            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+            credentials: 'same-origin', // include, same-origin, *omit
+            headers: {
+                'content-type': 'application/json'
+            },
+            method: 'POST', // *GET, POST, PUT, DELETE, etc.
+            mode: 'cors', // no-cors, cors, *same-origin
+            redirect: 'follow', // manual, *follow, error
+            referrer: 'no-referrer', // *client, no-referrer
+        })
+            .then(response => {
+                console.log(response)
+            }) // parses response to JSON
+    };
 
     _keyExtractor = (item, index) => item.id;
     _keyExtractorForSideBar = (item, index) => item.type;
     render() {
         navigator = this.props.navigation;
-        console.log('sidebar');
 
-        const sidebar = <SideBar types={this.state.types} selectType={(type) => {this.selectType(type)}}/>;
+        const sidebar = <SideBar types={this.state.types}
+                                 selectType={(type) => {this.selectType(type)}}
+                                 selectByMedia={(type) => {this.selectByMedia(type)}}/>;
             {/*<SafeAreaView style={{flex: 1, backgroundColor: '#fff'}}>*/}
             {/*    <ScrollView style={{backgroundColor: 'white'}}>*/}
             {/*        <FlatList*/}
@@ -379,8 +464,8 @@ export default class HomePage extends React.Component {
             {/*    </ScrollView>*/}
             {/*</SafeAreaView>*/}
 
-
         return (
+
             <View style={styles.container}>
                 {this.state.isLoading ? <View style={styles.maskView}/> : <View/>}
                 {this.state.isLoading ?
@@ -445,6 +530,7 @@ export default class HomePage extends React.Component {
                                 keyExtractor={this._keyExtractor}
                             />
                         </ScrollView>
+                        <Button onClick={this.fetch}>fetch</Button>
                         {/*<View style={{position: 'absolute', left: 0, right: 0, bottom: 6, alignItems: 'center'}}>*/}
                         {/*    <Svg*/}
                         {/*        height="52"*/}
