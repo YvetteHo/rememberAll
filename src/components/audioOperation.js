@@ -19,8 +19,12 @@ import {AudioRecorder, AudioUtils} from 'react-native-audio';
 import Sound from 'react-native-sound';
 import Icon from "react-native-vector-icons/dist/MaterialIcons";
 import {insertAudio, updateNote} from "../database/schemas";
+import {moveFile, DocumentDirectoryPath, writeFile, mkdir, exists} from "react-native-fs";
+
 const uuid = require('uuid/v1');
 const { width, height } = Dimensions.get('window');
+let uuidForAudio = '';
+const RNFS = require('react-native-fs');
 
 async function requestAudioPermission() {
     try {
@@ -49,14 +53,16 @@ async function requestAudioPermission() {
 export default class AudioOperation extends React.Component {
     constructor(props) {
         super(props);
+        uuidForAudio = uuid();
         this.state = {
             recording: false,
             currentTime: 0.0,
             paused: false,
             stoppedRecording: false,
             finished: false,
-            audioPath: AudioUtils.DocumentDirectoryPath + '/test.aac',
+            audioPath: AudioUtils.DocumentDirectoryPath + '/audios/' + uuidForAudio + '.aac',
             hasPermission: undefined,
+            uuidForAudio: uuid()
         };
     }
 
@@ -160,32 +166,6 @@ export default class AudioOperation extends React.Component {
         }
     }
 
-    async _play() {
-        if (this.state.recording) {
-            await this._stop();
-        }
-
-        // These timeouts are a hacky workaround for some issues with react-native-sound.
-        // See https://github.com/zmxv/react-native-sound/issues/89.
-        setTimeout(() => {
-            let sound = new Sound(this.state.audioPath, '', (error) => {
-                if (error) {
-                    console.log('failed to load the sound', error);
-                }
-            });
-
-            setTimeout(() => {
-                sound.play((success) => {
-                    if (success) {
-                        console.log('successfully finished playing');
-                    } else {
-                        console.log('playback failed due to audio decoding errors');
-                    }
-                });
-            }, 100);
-        }, 100);
-    }
-
     async _record() {
         if (this.state.recording) {
             console.warn('Already recording!');
@@ -216,6 +196,11 @@ export default class AudioOperation extends React.Component {
     }
 
     componentDidMount() {
+        exists(DocumentDirectoryPath + '/audios').then((exists) => {
+            if (!exists) {
+                mkdir(DocumentDirectoryPath + '/audios').then();
+            }
+        });
         if(Platform.OS === 'android') {
             requestAudioPermission().then(
             );
@@ -236,10 +221,16 @@ export default class AudioOperation extends React.Component {
                 if (Platform.OS === 'ios') {
                     this._finishRecording(data.status === "OK", data.audioFileURL, data.audioFileSize);
                 }
-                const id = '*#audio#*' + uuid();
-                insertAudio({uuid: id, noteId: this.props.note.id || ''});
 
-                this.endRecording(id);
+                // moveFile(this.state.audioPath, DocumentDirectoryPath + '/audios/' + uuidForAudio + '.aac').then(
+                //     () => {
+                //
+
+                // );
+                insertAudio({uuid: '*#audio#*' + uuidForAudio, uri: uuidForAudio + '.aac',noteId: this.props.note.id || ''});
+                this.endRecording('*#audio#*' + uuidForAudio);
+
+
             };
         });
     }

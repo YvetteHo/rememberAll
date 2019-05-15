@@ -5,6 +5,8 @@ const AUDIO_SCHEMA = "AudioList";
 const PICTURE_SCHEMA = "PictureList";
 const VIDEO_SCHEMA = "VideoList";
 const TYPE_SCHEMA = "TypeList";
+const RNFS = require('react-native-fs');
+
 export let rememberAllRealm;
 export const NoteSchema = {
     name: NOTE_SCHEMA,
@@ -24,24 +26,27 @@ export const AudioSchema = {
     primaryKey: 'uuid',
     properties: {
         uuid: 'string',
+        uri: 'string',
         noteId: 'string',
     }
 };
 
 export const PictureSchema = {
     name: PICTURE_SCHEMA,
-    primaryKey: 'uri',
+    primaryKey: 'uuid',
     properties: {
         uri: 'string',
+        uuid: 'string',
         noteId: 'string',
     }
 };
 
 export const VideoSchema = {
     name: VIDEO_SCHEMA,
-    primaryKey: 'uri',
+    primaryKey: 'uuid',
     properties: {
         uri: 'string',
+        uuid: 'string',
         noteId: 'string',
     }
 };
@@ -60,8 +65,10 @@ const databaseOptions = {
 };
 export const buildRealm = () => new Promise((resolve, reject) =>{
     Realm.open(databaseOptions).then((realm) => {
-        rememberAllRealm = realm;
-        resolve(realm);
+        realm.write(() => {
+            rememberAllRealm = realm;
+            resolve(realm);
+        })
     })
 });
 
@@ -76,8 +83,6 @@ export const queryNotes = (realmObject) => new Promise((resolve, reject) => {
             let allNotes = rememberAllRealm.objects(NOTE_SCHEMA);
             resolve(allNotes)
         }
-
-
 });
 
 export const queryTypes = () => new Promise((resolve, reject) => {

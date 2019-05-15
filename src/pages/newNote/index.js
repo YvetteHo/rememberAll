@@ -12,7 +12,8 @@ import {
     KeyboardAvoidingView,
     Platform,
     Image,
-    cameraRoll,
+    cameraRoll, CameraRoll,
+    AsyncStorage
 } from 'react-native';
 import Icon from 'react-native-vector-icons/dist/MaterialIcons';
 import Header from "../../components/header";
@@ -32,6 +33,7 @@ import Sound from "react-native-sound";
 import FullWidthImage from "../../components/FullWidthImage";
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view'
 import Spacer from 'react-native-spacer';
+import {moveFile, DocumentDirectoryPath, writeFile, mkdir, exists} from "react-native-fs";
 
 const Spinner = require('react-native-spinkit');
 
@@ -61,6 +63,7 @@ export default class NewNote extends React.Component {
             change: false,
             modalVisible: true,
             note: props.navigation.getParam('note'),
+            oldNoteContent: Array.from(props.navigation.getParam('note').noteContent),
             noteContent: Array.from(props.navigation.getParam('note').noteContent),
             newValue: '',
             height: 40,
@@ -68,6 +71,7 @@ export default class NewNote extends React.Component {
             isLoading: false,
             newPicture: '',
             isVideoRecording: false,
+            userId: ''
         };
         this.endRecording = this.endRecording.bind(this);
     }
@@ -77,6 +81,11 @@ export default class NewNote extends React.Component {
     };
 
     componentDidMount() {
+        AsyncStorage.getItem('userId').then((response) => {
+            this.setState({
+                userId: response
+            })
+        });
     }
 
     handleSelectionChange = ({nativeEvent: {selection}}) => {
@@ -134,34 +143,42 @@ export default class NewNote extends React.Component {
             } else if (response.customButton) {
                 console.log('User tapped custom button: ', response.customButton);
             } else {
+                console.log();
+                // CameraRoll.saveToCameraRoll(response.uri, 'photo');
 
+                const lastLine = response.uri.lastIndexOf('/');
+                const fileName = response.uri.substr(lastLine + 1);
+                const lastDot = fileName.lastIndexOf('.');
+                const uriId = fileName.substr(0, lastDot);
+
+                console.log(fileName, uriId);
                 // You can also display the image using data:
                 // const source = { uri: 'data:image/jpeg;base64,' + response.data };
-                let formData = new FormData();
-                let file = {
-                    uri: response.uri,
-                    type: 'image/jpeg',
-                    name: 'test.jpg',
-                };
-
-                formData.append('file', file);
-                formData.append('remark', 'test');
-
-                this.postData('http://127.0.0.1:8000/files/', formData).then(response => {
-                    console.log(response)
-                }).catch((error) => {
-                    console.log(terror)
-                })
+                // let formData = new FormData();
+                // let file = {
+                //     uri: response.uri,
+                //     type: 'image/jpeg',
+                //     name: 'test.jpg',
+                // };
+                //
+                // formData.append('file', file);
+                // formData.append('remark', 'test');
+                //
+                // this.postData('http://127.0.0.1:8000/files/', formData).then(response => {
+                //     console.log(response)
+                // }).catch((error) => {
+                //     console.log(error)
+                // })
                 this.setState({
                     newPicture: {uri: response.uri},
                 });
                 const oldNoteContent = this.state.noteContent;
-                oldNoteContent.push('*#image#*' + response.uri);
+                oldNoteContent.push('*#image#*' + uriId);
                 this.setState({
                     noteContent: oldNoteContent,
                     change: true
                 });
-                insertPicture({uri: '*#image#*' + response.uri, noteId: this.state.note.id})
+                insertPicture({uuid: '*#image#*' + uriId, uri: fileName, noteId: this.state.note.id})
             }
 
         });
@@ -214,6 +231,8 @@ export default class NewNote extends React.Component {
     };
 
     save = (name) => {
+        const isNew = this.props.navigation.getParam('isNew', null);
+
         const note = this.props.navigation.getParam('note', null);
 
         console.log(`name: ${name}`);
@@ -221,6 +240,17 @@ export default class NewNote extends React.Component {
             isLoading: true
         });
         let skeleton = [];
+
+        const newNote = {
+            id: note.id,
+            name: name || note.name,
+            noteType: note.noteType,
+            time: note.time,
+            noteContent: JSON.stringify(this.state.noteContent),
+            noteSkeleton: JSON.stringify(skeleton),
+            user: 'http://127.0.0.1:8000/users/' + this.state.userId + '/'
+        };
+        console.log(newNote);
 
         updateNote({
             id: note.id,
@@ -231,16 +261,43 @@ export default class NewNote extends React.Component {
             noteSkeleton: skeleton
         }).then(() => {
             commitTrans().then(() => {
+                if (isNew) {
+                    console.log('newNote', newNote)
+                    AsyncStorage.getItem('operations').then((response) => {
+                        let operations = JSON.parse(response);
+                        operations.push({
+                            'newNote': newNote
+                        });
+                        AsyncStorage.setItem('operations', JSON.stringify(operations))
+                    });
+                } else {
+                    AsyncStorage.getItem('operations').then((response) => {
+                        let operations = JSON.parse(response);
+                        console.log('newNote', newNote)
+
+                        operations.push({
+                            'updateNoteContent': [
+                                {
+                                    'oldNote': {
+                                        id: note.id,
+                                        name: note.name,
+                                        noteType: note.noteType,
+                                        time: note.time,
+                                        noteContent: JSON.stringify(this.state.oldNoteContent),
+                                        noteSkeleton: JSON.stringify(skeleton),
+                                        user: 'http://127.0.0.1:8000/users/' + this.state.userId + '/'
+                                    }
+                                },
+                                {'updatedNote': newNote}]
+                        });
+                        AsyncStorage.setItem('operations', JSON.stringify(operations))
+                    });
+                }
                 this.setState({
                     isLoading: false
                 });
                 this.props.navigation.goBack()
-            }).catch(() => {
-                this.setState({
-                    isLoading: false
-                });
-            });
-
+            })
         }).catch(() => {
             cancelTrans().then(() => {
                 this.setState({
@@ -310,6 +367,7 @@ export default class NewNote extends React.Component {
     };
 
     renderAudio = (element, index) => {
+        console.log(element, index);
         const swipeOutButtons = [
             {
                 text: '删除',
@@ -334,7 +392,7 @@ export default class NewNote extends React.Component {
 
         return (
             <SwipeAction right={swipeOutButtons} key={index}>
-                <AudioPlayer id={index}/>
+                <AudioPlayer id={index} audioName={element.substr(9)}/>
             </SwipeAction>
         )
     };
@@ -398,9 +456,10 @@ export default class NewNote extends React.Component {
                                     style: {color: 'white'}
                                 }
                             ];
+                            console.log(element)
 
                             return <SwipeAction right={swipeOutButtons} key={index}>
-                                <FullWidthImage uri={element.substr(9)} key={index}/>
+                                <FullWidthImage uriId={element.substr(9)} key={index}/>
                             </SwipeAction>
                         } else if (element.slice(0, 9) === '*#video#*') {
                             const swipeOutButtons = [
@@ -427,7 +486,7 @@ export default class NewNote extends React.Component {
                                 }
                             ];
                             return <SwipeAction right={swipeOutButtons} key={index}>
-                                <MyVideoPlayer key={index} uri={element.slice(9)}/>
+                                <MyVideoPlayer key={index} videoName={element.slice(9)}/>
                             </SwipeAction>;
                         } else {
                             return this.renderTextInput(element, index)

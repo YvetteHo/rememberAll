@@ -15,7 +15,7 @@ import {
 import { RNCamera } from 'react-native-camera';
 import Icon from 'react-native-vector-icons/dist/Ionicons';
 import {insertVideo, updateNote} from "../../database/schemas";
-import {copyAssetsVideoIOS, DocumentDirectoryPath, copyFile} from 'react-native-fs';
+import {copyAssetsVideoIOS, DocumentDirectoryPath, copyFile, exists, mkdir, moveFile} from 'react-native-fs';
 
 const { width, height } = Dimensions.get('window');
 
@@ -33,6 +33,13 @@ export default class VideoOperation extends React.Component {
             isRecording: false,
             noteId: props.navigation.getParam('noteId'),
         };
+    }
+    componentDidMount() {
+        exists(DocumentDirectoryPath + '/videos').then((exists) => {
+            if (!exists) {
+                mkdir(DocumentDirectoryPath + '/videos').then();
+            }
+        });
     }
 
 
@@ -57,17 +64,30 @@ export default class VideoOperation extends React.Component {
                     isRecording: true
                 });
                 this.camera.recordAsync().then(data => {
+                    const lastLine = data.uri.lastIndexOf('/');
+                    const fileName = data.uri.substr(lastLine + 1);
+                    const lastDot = fileName.lastIndexOf('.');
+                    const uriId = fileName.substr(0, lastDot);
                     console.warn(data, data['uri'], data.uri);
-                    CameraRoll.saveToCameraRoll(data.uri, 'video').then(
-                        (uri) => {
+                    console.warn(DocumentDirectoryPath + '/videos/' + uriId + '.mp4');
+                    moveFile(data.uri, DocumentDirectoryPath + '/videos/' + uriId + '.mp4').then(
+                        () => {
+                            CameraRoll.saveToCameraRoll(DocumentDirectoryPath + '/videos/' + uriId + '.mp4', 'video');
+                            console.warn(uriId);
                             insertVideo({
-                                uri: '*#video#*' + uri,
+                                uuid: '*#video#*' + uriId,
+                                uri: fileName,
                                 noteId: this.state.noteId,
                             });
                             this.props.navigation.goBack();
-                            this.props.navigation.state.params.endVideoRecording('*#video#*' + uri);
+                            this.props.navigation.state.params.endVideoRecording('*#video#*' + uriId);
+
                         }
-                    );
+
+                    ).catch((error) => {
+                        console.warn(error)
+                    });
+
                 });
             } catch (e) {
                 console.error(e);

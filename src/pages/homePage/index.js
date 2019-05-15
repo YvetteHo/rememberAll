@@ -13,13 +13,15 @@ import {
     TouchableHighlight,
     FlatList,
     SectionList,
-    TouchableWithoutFeedback, TextInput
+    TouchableWithoutFeedback,
+    TextInput,
+    AsyncStorage
 } from 'react-native';
 import Svg, {Path, G, Circle} from 'react-native-svg';
 import Icon from 'react-native-vector-icons/dist/MaterialIcons';
 import FontIcon from 'react-native-vector-icons/dist/FontAwesome';
 import IIcon from 'react-native-vector-icons/dist/Ionicons';
-import {getData, postData} from '../../components/http';
+import {getData, postData, upload} from '../../components/http';
 
 import {Drawer, Card, SwipeAction, Modal, Button} from 'antd-mobile-rn';
 import Header from "../../components/header";
@@ -35,9 +37,11 @@ import {
     queryTypes,
     updateType,
     updateTypeNotes,
-    buildRealm, sortById, showNotesSkeleton, sortByMediaType,rememberAllRealm
+    buildRealm, sortById, sortByMediaType,rememberAllRealm
 } from "../../database/schemas";
 import SideBar from "../../components/sideBar";
+import Uploader from "../../components/upload";
+import {DocumentDirectoryPath} from "react-native-fs";
 
 const Spinner = require('react-native-spinkit');
 const uuid = require('uuid/v1');
@@ -55,6 +59,10 @@ const headerShadow = {
 };
 const DEMO_OPTIONS = ['录音', '图片', '视频'];
 
+const excuteUpload = new Promise((resolve, reject) => {
+
+});
+
 export default class HomePage extends React.Component {
     constructor(props) {
         super(props);
@@ -70,46 +78,55 @@ export default class HomePage extends React.Component {
             oldType: '',
             types: [],
             notesOnSearch: [],
+            userId: '',
         };
         this.openNote = this.openNote.bind(this);
-
+        AsyncStorage.getItem('operations').then((response) => {
+            const operations = JSON.parse(response);
+            const uploader = new Uploader(operations);
+            uploader.upload();
+        });
     }
 
     componentDidMount() {
-        getData('http://127.0.0.1:8000/users', {'userId': 'ab46f6c2-72e2-11e9-a61d-acde48001122'}).then(
-            (response) => {
-                response.json().then((response) => {
-                    console.log(response)
-                    buildRealm().then(() => {
 
-                        queryNotes().then((notes) => {
-                            this.setState({
-                                notesOnSearch: notes,
-                                notes: notes,
-                                isLoading: false,
-                            });
-                            console.log(Array.from(notes))
-                            queryTypes().then((types) => {
-                                this.setState({
-                                    types: types
-                                });
-                            }).catch((error) => {
-                                console.log(error)
-                            });
-                            rememberAllRealm.addListener('change', () => {
-                                if (!rememberAllRealm.isInTransaction) {
-                                    this.reloadData();
-                                    console.log('change');
-                                }
-                            });
 
-                        });
+        AsyncStorage.getItem('userId').then((response) => {
+            this.setState({
+                userId: response
+            })
+        });
+        AsyncStorage.getItem('operations').then((response) => {
+            let operations = JSON.parse(response);
+            console.log('所有操作', operations);
+        });
 
-                    })
-                })
 
-            }
-        );
+        buildRealm().then(() => {
+
+            queryNotes().then((notes) => {
+                this.setState({
+                    notesOnSearch: notes,
+                    notes: notes,
+                    isLoading: false,
+                });
+                console.log(Array.from(notes))
+                queryTypes().then((types) => {
+                    this.setState({
+                        types: types
+                    });
+                }).catch((error) => {
+                    console.log(error)
+                });
+                rememberAllRealm.addListener('change', () => {
+                    if (!rememberAllRealm.isInTransaction) {
+                        this.reloadData();
+                        console.log('change');
+                    }
+                });
+
+            });
+        });
 
         this.setState({
             isLoading: false
@@ -192,6 +209,16 @@ export default class HomePage extends React.Component {
                     noteContent: note.noteContent,
                     noteSkeleton: note.noteSkeleton
                 }).then(() => {
+                    AsyncStorage.getItem('operations').then((response) => {
+                        let operations = JSON.parse(response);
+                        operations.push({
+                            'updateType': {
+                                noteId: note.id,
+                                noteType: type.toString()
+                            }
+                        });
+                        AsyncStorage.setItem('operations', JSON.stringify(operations))
+                    });
                     if (this.state.oldType !== '') {
                         updateTypeNotes(this.state.oldType, note.id).then(() => {
                             commitTrans()
@@ -223,34 +250,52 @@ export default class HomePage extends React.Component {
                 isNew: false,
             })
         } else {
-            postData('http://127.0.0.1:8000/notes/', {
-                id: '',
-                name: '',
-                time: new Date(),
-                noteType: '',
-                noteContent: JSON.stringify([]),
-                noteSkeleton: JSON.stringify([]),
-                user: 'http://127.0.0.1:8000/users/771dbc34-7335-11e9-8e7a-acde48001122/',
-            }).then((response) => {
-                response.json().then(response => {
-                    console.log(response)
-                })
-            });
-            const newNote = {
-                id: uuid(),
-                name: '',
-                time: new Date(),
-                noteType: '',
-                noteContent: [],
-            };
-            insertNote(newNote).then(() => {
-                this.props.navigation.navigate('NewNote', {
-                    note: newNote,
-                    isNew: true
-                })
-            }).catch(() => {
+            // postData('http://127.0.0.1:8000/notes/', {
+            //     id: '',
+            //     name: '',
+            //     time: new Date(),
+            //     noteType: '',
+            //     noteContent: JSON.stringify([]),
+            //     noteSkeleton: JSON.stringify([]),
+            //     user: 'http://127.0.0.1:8000/users/771dbc34-7335-11e9-8e7a-acde48001122/',
+            // }).then((response) => {
+            //     response.json().then(response => {
+            //         console.log(response)
+            //     })
+            // });
 
-            });
+            let noteId = uuid();
+            let noteDate = new Date();
+            // AsyncStorage.getItem('operations').then((response) => {
+            //     let operations = JSON.parse(response);
+            //     operations.append({'newNote': {
+            //             id: noteId,
+            //             name: '',
+            //             time: noteDate,
+            //             noteType: '',
+            //             noteContent: [],
+            //             noteSkeleton: [],
+            //             user: 'http://127.0.0.1:8000/users/' + this.state.userId
+            //         }});
+            //     AsyncStorage.setItem('operations', JSON.stringify(operations)).then(() => {
+                    const newNote = {
+                        id: noteId,
+                        name: '',
+                        time: noteDate,
+                        noteType: '',
+                        noteContent: [],
+                    };
+                    insertNote(newNote).then(() => {
+                        this.props.navigation.navigate('NewNote', {
+                            note: newNote,
+                            isNew: true
+                        })
+                    }).catch(() => {
+
+                    })
+
+                // })
+            // });
         }
 
     };
@@ -305,9 +350,16 @@ export default class HomePage extends React.Component {
                 text: '删除',
                 onPress: () => {
                     beginTrans();
-
+                    let noteId = note.id;
                     deleteNote(note.id).then(() => {
-                        commitTrans();
+                        AsyncStorage.getItem('operations').then((response) => {
+                            let operations = JSON.parse(response);
+                            operations.push({
+                                'deleteNote': noteId
+                            });
+                            AsyncStorage.setItem('operations', JSON.stringify(operations))
+                        });
+                        commitTrans()
 
                     }).catch((error) => {
                         console.log(error);
@@ -344,7 +396,7 @@ export default class HomePage extends React.Component {
                         </View>
                         {note.noteSkeleton[3] !== '' ? <Image
                             key={index}
-                            source={{uri: note.noteSkeleton[3]}}
+                            source={{uri: DocumentDirectoryPath + '/images/' + note.noteSkeleton[3] + '.jpg'}}
                             style={{width: 50, height: 50, justifyContent: 'flex-end', marginRight: 10, resizeMode: 'cover'}}
                         /> : <View/>}
 

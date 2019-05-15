@@ -14,20 +14,24 @@ import {
     Image
 } from 'react-native';
 import Placeholder from 'rn-placeholder';
+import {moveFile, DocumentDirectoryPath, writeFile, mkdir, exists} from "react-native-fs";
 
 const dimensions = Dimensions.get('window');
-
+let uri = '';
 export default class FullWidthImage extends React.Component{
     constructor(props) {
         super(props);
         this.state = {
             pictureWidth: 0,
             pictureHeight: 0,
-            isReady: false
+            isReady: false,
         };
     }
     componentDidMount() {
-        Image.getSize(this.props.uri, (width, height) => {
+
+        uri = DocumentDirectoryPath + '/images/' + this.props.uriId + '.jpg';
+        console.log(uri);
+        Image.getSize(uri, (width, height) => {
             let imageScale = width / height;
             this.setState({
                 pictureHeight: dimensions.width / imageScale,
@@ -35,7 +39,7 @@ export default class FullWidthImage extends React.Component{
                 isReady: true
             })
         }, (failure) => {
-            console.log(this.props.uri)
+            // console.log(this.props.uri)
         });
     }
 
@@ -51,7 +55,7 @@ export default class FullWidthImage extends React.Component{
                 >
                     <Image
                         key={this.props.index}
-                        source={{uri: this.props.uri}}
+                        source={{uri: uri}}
                         style={{width: this.state.pictureWidth, height: this.state.pictureHeight}}
                     />
                 </Placeholder.ImageContent>

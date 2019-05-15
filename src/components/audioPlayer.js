@@ -9,6 +9,7 @@ import {
     ProgressViewIOS
 } from 'react-native';
 import {AudioUtils} from 'react-native-audio';
+import {moveFile, DocumentDirectoryPath, writeFile, mkdir, exists} from "react-native-fs";
 
 import Sound from 'react-native-sound';
 import {WhiteSpace, Card, Modal, SwipeAction, TextareaItem} from 'antd-mobile-rn';
@@ -18,7 +19,8 @@ export default class AudioPlayer extends React.Component {
     constructor(props) {
         super(props);
         this.sliderEditing = false;
-        this.sound = new Sound(AudioUtils.DocumentDirectoryPath + '/test.aac', '', (error) => {
+        console.log(DocumentDirectoryPath + '/audios/' + this.props.audioName + '.aac');
+        this.sound = new Sound(DocumentDirectoryPath + '/audios/' + this.props.audioName + '.aac', '', (error) => {
             if (error) {
                 console.log('failed to load the sound', error);
             }

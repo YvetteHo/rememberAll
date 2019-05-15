@@ -1,6 +1,6 @@
 import React from 'react';
 import {Fragment} from 'react';
-import {SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View, TextInput, Alert, Platform} from 'react-native';
+import {SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View, TextInput, AsyncStorage} from 'react-native';
 import {Button, List, WhiteSpace} from 'antd-mobile-rn';
 import {NavigationActions, StackActions} from "react-navigation";
 import Header from '../../components/header';
@@ -16,35 +16,61 @@ export default class Login extends React.Component{
             userName: '',
             password: '',
         };
-        // this.props.navigation.dispatch(StackActions.reset({
-        //     index: 0,
-        //     actions: [
-        //         NavigationActions.navigate({routeName: 'Drawer'})
-        //     ],
-        // }))
+        this.props.navigation.dispatch(StackActions.reset({
+            index: 0,
+            actions: [
+                NavigationActions.navigate({routeName: 'Drawer'})
+            ],
+        }))
     }
+    // _retrieveData = async () => {
+    //     try {
+    //         const value = await AsyncStorage.getItem('TASKS');
+    //         if (value !== null) {
+    //             // We have data!!
+    //             console.log(value);
+    //         }
+    //     } catch (error) {
+    //         // Error retrieving data
+    //     }
+    // };
+    retrieveData = () => {
+        AsyncStorage.getItem(keyword);
+    };
 
-    login = () => {
-
+    storeData = () => {
+        AsyncStorage.setItem('userId', '771dbc34-7335-11e9-8e7a-acde48001122');
+    };
+    register = () => {
         postData('http://127.0.0.1:8000/users/', {
-            "id": '771dbc34-7335-11e9-8e7a-acde48001122',
+            "id": '',
             "name": this.state.userName,
             "password": this.state.password,
         }).then((response) => {
             if (response.status === 200) {
                 // console.log(response._bodyText)
                 response.json().then((response) => {
-                    console.log(response)
-                    if (response === "success") {
-                        console.log('成功登陆');
-                        this.props.navigation.dispatch(StackActions.reset({
-                            index: 0,
-                            actions: [
-                                NavigationActions.navigate({routeName: 'Drawer'})
-                            ],
-                        }))
+                    console.log(response);
+                    if (response.status === "success") {
+                        console.log('成功');
+                        console.log(response)
+                        console.log(response.userId)
+
+                        AsyncStorage.setItem('userId', response.userId).then((response) => {
+                            console.log(response);
+                            console.log('成功登陆');
+                        });
+                        AsyncStorage.setItem('operations', '[]').then((response) => {
+                            this.props.navigation.dispatch(StackActions.reset({
+                                index: 0,
+                                actions: [
+                                    NavigationActions.navigate({routeName: 'Drawer'})
+                                ],
+                            }))
+                        })
+
                     }
-                    if (response === "fail"){
+                    if (response.status === "fail"){
                         console.log('登陆失败')
                     }
                 })
@@ -53,6 +79,45 @@ export default class Login extends React.Component{
         }).catch((error) => {
             console.log(error)
         })
+    };
+
+    login = () => {
+        AsyncStorage.getItem('userId').then(
+            // '771dbc34-7335-11e9-8e7a-acde48001122'
+            (userId) => {
+                console.log(userId);
+                postData('http://127.0.0.1:8000/users/', {
+                    "id": userId,
+                    "name": this.state.userName,
+                    "password": this.state.password,
+                }).then((response) => {
+                    if (response.status === 200) {
+                        // console.log(response._bodyText)
+                        response.json().then((response) => {
+                            console.log(response);
+                            if (response === "success") {
+
+                                console.log('成功登陆');
+                                this.props.navigation.dispatch(StackActions.reset({
+                                    index: 0,
+                                    actions: [
+                                        NavigationActions.navigate({routeName: 'Drawer'})
+                                    ],
+                                }))
+                            }
+                            if (response === "fail"){
+                                console.log('登陆失败')
+                            }
+                        })
+
+                    }
+                }).catch((error) => {
+                    console.log(error)
+                })
+            }
+        );
+
+
 
     };
 
@@ -87,6 +152,10 @@ export default class Login extends React.Component{
 
                         }}
                     />
+                    <Button
+                        style={{width: '90%'}}
+                        onClick={this.register}
+                    >注册咕咕咕</Button>
                     <Button
                         style={{width: '90%'}}
                         onClick={this.login}

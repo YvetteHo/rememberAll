@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { View, Text, Button } from 'react-native';
 import VideoPlayer from 'react-native-video-player';
+import {moveFile, DocumentDirectoryPath, writeFile, mkdir, exists} from "react-native-fs";
 
 
 export default class MyVideoPlayer extends Component {
@@ -24,7 +25,7 @@ export default class MyVideoPlayer extends Component {
                 <VideoPlayer
                     endWithThumbnail
                     // thumbnail={{ uri: this.state.thumbnailUrl }}
-                    video={{ uri: this.props.uri }}
+                    video={{ uri: DocumentDirectoryPath + '/videos/' + this.props.videoName + '.mov' }}
                     videoWidth={this.state.video.width}
                     videoHeight={this.state.video.height}
                     duration={this.state.video.duration}
