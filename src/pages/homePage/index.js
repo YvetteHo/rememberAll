@@ -17,6 +17,7 @@ import {
     TextInput,
     AsyncStorage
 } from 'react-native';
+import {Fragment} from 'react';
 import Svg, {Path, G, Circle} from 'react-native-svg';
 import Icon from 'react-native-vector-icons/dist/MaterialIcons';
 import FontIcon from 'react-native-vector-icons/dist/FontAwesome';
@@ -42,6 +43,7 @@ import {
 import SideBar from "../../components/sideBar";
 import Uploader from "../../components/upload";
 import {DocumentDirectoryPath} from "react-native-fs";
+import {NavigationActions, StackActions} from "react-navigation";
 
 const Spinner = require('react-native-spinkit');
 const uuid = require('uuid/v1');
@@ -78,7 +80,7 @@ export default class HomePage extends React.Component {
             oldType: '',
             types: [],
             notesOnSearch: [],
-            userId: '',
+            userName: '',
         };
         this.openNote = this.openNote.bind(this);
         AsyncStorage.getItem('operations').then((response) => {
@@ -91,9 +93,9 @@ export default class HomePage extends React.Component {
     componentDidMount() {
 
 
-        AsyncStorage.getItem('userId').then((response) => {
+        AsyncStorage.getItem('userName').then((response) => {
             this.setState({
-                userId: response
+                userName: response
             })
         });
         AsyncStorage.getItem('operations').then((response) => {
@@ -308,6 +310,37 @@ export default class HomePage extends React.Component {
 
     };
 
+    rename = (name, note) => {
+        console.log(name, note);
+        beginTrans().then(() => {
+                updateNote({
+                    id: note.id,
+                    name: name,
+                    noteType: note.noteType,
+                    time: note.time,
+                    noteContent: note.noteContent,
+                    noteSkeleton: note.noteSkeleton
+                }).then(() => {
+                    console.log('成功')
+                    AsyncStorage.getItem('operations').then((response) => {
+                        let operations = JSON.parse(response);
+                        operations.push({
+                            'updateName': {
+                                noteId: note.id,
+                                noteName: name
+                            }
+                        });
+                        AsyncStorage.setItem('operations', JSON.stringify(operations))
+                        commitTrans();
+                    });
+
+                }).catch((error) => {
+                    console.log(error);
+                    cancelTrans()
+                })
+        });
+    };
+
 
     renderItem = (note, index) => {
         const swipeOutButtons = [
@@ -316,7 +349,28 @@ export default class HomePage extends React.Component {
                 style: {color: 'white'},
 
                 onPress: () => {
+                    this.setState({
+                        oldType: note.noteType
+                    });
+                    Modal.prompt(
+                        '修改笔记名称',
+                        null,
+                        [
+                            {
+                                text: '不保存',
+                                onPress: this.cancel,
+                                style: 'cancel',
+                            },
+                            {
+                                text: '保存',
+                                onPress: name => this.rename(name, note)
+                            }
 
+                        ],
+                        'default',
+                        note.name === ''? '' : note.name,
+                        ['输入笔记名称']
+                    );
                 }
             }, {
                 text: '分组',
@@ -382,12 +436,16 @@ export default class HomePage extends React.Component {
         return (
             <SwipeAction right={swipeOutButtons} key={index} style={{marginBottom: 5}}>
                 <TouchableWithoutFeedback onPress={() => this.openNote(note)}>
-                    <View key={index} style={[styles.noteContainer2, {flex: 1, height: 60, width: width, backgroundColor: 'white'}]}>
+                    <View key={index} style={[styles.noteContainer2, {flex: 1, height: 85, width: width, backgroundColor: 'white'}]}>
                         <View style={styles.noteContainer}>
                             <View style={styles.rowContainer}>
-                                <Text style={{marginRight: 10}}>{note.noteSkeleton[0]}</Text>
-                                {typeIndex !== -1 ? <IIcon name="ios-bookmark" size={15} color={colors[typeIndex]}/> : <View/>}
-                                    </View>
+                                <Text style={{marginRight: 10, marginBottom: 10, fontSize: 18}}>{note.name}</Text>
+                                {typeIndex !== -1 ? <IIcon style={{marginBottom: 10}} name="ios-bookmark" size={15} color={colors[typeIndex]}/> : <View/>}
+
+                            </View>
+                            <View style={styles.rowContainer}>
+                                <Text numberOfLines={1} style={{marginRight: 10, marginBottom: 10}}>{note.noteSkeleton[0]}</Text>
+                            </View>
                             <View style={styles.rowContainer}>
                                 <Text>{note.time.toLocaleString()}</Text>
                                 {note.noteSkeleton[1] === 'true' ? <Icon name="mic" size={15} color="#FF5722"/> : <View/>}
@@ -446,13 +504,18 @@ export default class HomePage extends React.Component {
     };
 // `http://127.0.0.1:8000/user/?id=${userId}`
     fetch = () => {
+        AsyncStorage.getItem('token').then((token) => {
+            // console.log('http://127.0.0.1:8000/notes/' + ' -H ' + '\'Authorization: Token ' + token + '\'');
+        getData('http://127.0.0.1:8000/notes/', {Authorization: 'Token ' + token}).then((response) => {
+            console.log(response)
+        }) })
         // this.getData('http://127.0.0.1:8000/users', {'userId': '2'})
         // this.postData('http://127.0.0.1:8000/users/', {
         //     "id": 'ab46f6c2-72e2-11e9-a61d-acde48001122',
         //     "name": '1',
         //     "password": '234',
         // })
-
+        //
         // this.getData('http://127.0.0.1:8000/notes/1', {})
 
 
@@ -497,15 +560,24 @@ export default class HomePage extends React.Component {
                 console.log(response)
             }) // parses response to JSON
     };
-
+    logout = () => {
+        // this.props.navigation.dispatch(StackActions.reset({
+        //     index: 0,
+        //     actions: [
+        //         NavigationActions.navigate({routeName: 'Login'})
+        //     ],
+        // }))
+        this.props.navigation.navigate('Login');
+    };
     _keyExtractor = (item, index) => item.id;
-    _keyExtractorForSideBar = (item, index) => item.type;
     render() {
         navigator = this.props.navigation;
 
         const sidebar = <SideBar types={this.state.types}
                                  selectType={(type) => {this.selectType(type)}}
-                                 selectByMedia={(type) => {this.selectByMedia(type)}}/>;
+                                 selectByMedia={(type) => {this.selectByMedia(type)}}
+                                 logout={this.logout}
+        />;
             {/*<SafeAreaView style={{flex: 1, backgroundColor: '#fff'}}>*/}
             {/*    <ScrollView style={{backgroundColor: 'white'}}>*/}
             {/*        <FlatList*/}
@@ -517,93 +589,97 @@ export default class HomePage extends React.Component {
             {/*</SafeAreaView>*/}
 
         return (
+            <Fragment>
+                <SafeAreaView style={{flex: 0, backgroundColor: 'white'}}/>
+                <View style={styles.container}>
+                    {this.state.isLoading ? <View style={styles.maskView}/> : <View/>}
+                    {this.state.isLoading ?
+                        <View style={styles.floatView}>
+                            <Spinner style={styles.spinner} isVisible={true} size={100} type='Circle' color='#FF5722'/>
+                        </View> : <View/>}
+                    <Drawer sidebar={sidebar} position='left'
+                            open={false} drawerRef={el => (this.drawer = el)}
+                            onOpenChange={this.onOpenChange}
+                            drawerBackgroundColor='#ccc'>
+                        <SafeAreaView style={{flex: 1, backgroundColor: '#f5f5f5'}}>
+                            <Header leftElement={
+                                <View style={{flex: 1, flexDirection: 'row', alignItems: 'center'}}>
+                                    <TouchableOpacity
+                                        style={{flex: 1, justifyContent: 'flex-start'}}
+                                        onPress={() => this.drawer && this.drawer.openDrawer()}>
+                                        <Icon name="list" size={45} color="#FF5722"/>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={this.reloadData}
+                                        style={{flex: 1, justifyContent: 'flex-end'}}
+                                    >
+                                        <Text style={{fontSize: 20, color:"#FF5722"}}>全部</Text>
+                                        {/*<IIcon name="md-refresh" size={30} color="#FF5722" title="Go to Details"/>*/}
+                                    </TouchableOpacity>
+                                </View>
 
-            <View style={styles.container}>
-                {this.state.isLoading ? <View style={styles.maskView}/> : <View/>}
-                {this.state.isLoading ?
-                    <View style={styles.floatView}>
-                        <Spinner style={styles.spinner} isVisible={true} size={100} type='Circle' color='#FF5722'/>
-                    </View> : <View/>}
-                <Drawer sidebar={sidebar} position='left'
-                        open={false} drawerRef={el => (this.drawer = el)}
-                        onOpenChange={this.onOpenChange}
-                        drawerBackgroundColor='#ccc'>
-                    <SafeAreaView style={{flex: 1, backgroundColor: '#f5f5f5'}}>
-                        <Header leftElement={
-                            <View style={{flex: 1, flexDirection: 'row', alignItems: 'center'}}>
-                                <TouchableOpacity
-                                    style={{flex: 1, justifyContent: 'flex-start'}}
-                                    onPress={() => this.drawer && this.drawer.openDrawer()}>
-                                    <Icon name="list" size={45} color="#FF5722"/>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    onPress={this.reloadData}
-                                    style={{flex: 1, justifyContent: 'flex-end'}}
-                                >
-                                    <Text style={{fontSize: 20, color:"#FF5722"}}>全部</Text>
-                                    {/*<IIcon name="md-refresh" size={30} color="#FF5722" title="Go to Details"/>*/}
+                            } titleElement='笔记' rightElement={
+                                <View style={{flex: 1, flexDirection: 'row', alignItems: 'center'}}>
+                                    {/*<TouchableOpacity onPress={this.search} style={{flex: 1, justifyContent: 'flex-start'}}>*/}
+                                    {/*    <FontIcon name="search" size={30} color="#FF5722" title="Go to Details"/>*/}
+                                    {/*</TouchableOpacity>*/}
+                                    <View style={{flex: 1, justifyContent: 'flex-start'}}/>
+                                    <TouchableOpacity onPress={this.searchByTime}
+                                                      style={{flex: 1, justifyContent: 'flex-end'}}>
+                                        <IIcon name="ios-calendar" size={30} color="#FF5722" title="Go to Details"/>
+                                    </TouchableOpacity>
+                                </View>
+                            }/>
+                            <View style={styles.searchContainer}>
+                                <FontIcon name="search" size={20} color={this.state.searchColor}/>
+                                <TextInput
+                                    style={{width: '90%', height: 30, borderColor: '#f5f5f5', borderWidth: 0.5, borderRadius: 5,
+                                        backgroundColor: 'white'}}
+                                    placeholder='搜索'
+                                    onBlur={() => {
+                                        this.setState({
+                                            searchColor: '#757575',
+                                        })
+                                    }}
+                                    onChangeText={(text) => {
+                                        this.state.searchContent = text;
+                                        this.search(text);
+
+                                    }}
+                                />
+                            </View>
+                            <ScrollView style={{backgroundColor: '#f5f5f5'}}>
+                                <FlatList
+                                    data={this.state.notes}
+                                    renderItem={({item, index}) => this.renderItem(item, index)}
+                                    keyExtractor={this._keyExtractor}
+                                />
+                            </ScrollView>
+                            {/*<Button onClick={this.fetch}>fetch</Button>*/}
+                            {/*<View style={{position: 'absolute', left: 0, right: 0, bottom: 6, alignItems: 'center'}}>*/}
+                            {/*    <Svg*/}
+                            {/*        height="52"*/}
+                            {/*        width="52"*/}
+                            {/*    >*/}
+                            {/*        <Circle*/}
+                            {/*            cx="26"*/}
+                            {/*            cy="26"*/}
+                            {/*            r="26"*/}
+                            {/*            fill="white"*/}
+                            {/*        />*/}
+                            {/*    </Svg>*/}
+                            {/*</View>*/}
+                            <View style={{left: 0, right: 0, bottom: 0, alignItems: 'center'}}>
+                                <TouchableOpacity onPress={() => this.openNote(null)} style={styles.button}>
+                                    <Icon name="add-circle" size={64} color="#FF5722" title="Go to Details"/>
                                 </TouchableOpacity>
                             </View>
+                        </SafeAreaView>
+                    </Drawer>
+                </View>
+            </Fragment>
 
-                        } titleElement='笔记' rightElement={
-                            <View style={{flex: 1, flexDirection: 'row', alignItems: 'center'}}>
-                                {/*<TouchableOpacity onPress={this.search} style={{flex: 1, justifyContent: 'flex-start'}}>*/}
-                                {/*    <FontIcon name="search" size={30} color="#FF5722" title="Go to Details"/>*/}
-                                {/*</TouchableOpacity>*/}
-                                <View style={{flex: 1, justifyContent: 'flex-start'}}/>
-                                <TouchableOpacity onPress={this.searchByTime}
-                                                  style={{flex: 1, justifyContent: 'flex-end'}}>
-                                    <IIcon name="ios-calendar" size={30} color="#FF5722" title="Go to Details"/>
-                                </TouchableOpacity>
-                            </View>
-                        }/>
-                        <View style={styles.searchContainer}>
-                            <FontIcon name="search" size={20} color={this.state.searchColor}/>
-                            <TextInput
-                                style={{width: '90%', height: 30, borderColor: '#f5f5f5', borderWidth: 0.5, borderRadius: 5,
-                                backgroundColor: 'white'}}
-                                placeholder='搜索'
-                                onBlur={() => {
-                                    this.setState({
-                                        searchColor: '#757575',
-                                    })
-                                }}
-                                onChangeText={(text) => {
-                                    this.state.searchContent = text;
-                                    this.search(text);
 
-                                }}
-                            />
-                        </View>
-                        <ScrollView style={{backgroundColor: '#f5f5f5'}}>
-                            <FlatList
-                                data={this.state.notes}
-                                renderItem={({item, index}) => this.renderItem(item, index)}
-                                keyExtractor={this._keyExtractor}
-                            />
-                        </ScrollView>
-                        <Button onClick={this.fetch}>fetch</Button>
-                        {/*<View style={{position: 'absolute', left: 0, right: 0, bottom: 6, alignItems: 'center'}}>*/}
-                        {/*    <Svg*/}
-                        {/*        height="52"*/}
-                        {/*        width="52"*/}
-                        {/*    >*/}
-                        {/*        <Circle*/}
-                        {/*            cx="26"*/}
-                        {/*            cy="26"*/}
-                        {/*            r="26"*/}
-                        {/*            fill="white"*/}
-                        {/*        />*/}
-                        {/*    </Svg>*/}
-                        {/*</View>*/}
-                        <View style={{left: 0, right: 0, bottom: 0, alignItems: 'center'}}>
-                            <TouchableOpacity onPress={() => this.openNote(null)} style={styles.button}>
-                                <Icon name="add-circle" size={64} color="#FF5722" title="Go to Details"/>
-                            </TouchableOpacity>
-                        </View>
-                    </SafeAreaView>
-                </Drawer>
-            </View>
 
         );
     }

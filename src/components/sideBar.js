@@ -1,10 +1,22 @@
 import React from 'react';
-import {View, StyleSheet, Dimensions, Text, TouchableOpacity, ScrollView, FlatList, SafeAreaView} from 'react-native';
+import {
+    View,
+    StyleSheet,
+    Dimensions,
+    Text,
+    TouchableOpacity,
+    ScrollView,
+    FlatList,
+    SafeAreaView,
+    AsyncStorage
+} from 'react-native';
 import {BoxShadow} from 'react-native-shadow'
 import IIcon from "react-native-vector-icons/dist/Ionicons";
 import {Drawer, Card, SwipeAction, Modal, Button} from 'antd-mobile-rn';
 import {queryAudios, queryImages, queryVideos} from "../database/schemas";
 import Icon from "react-native-vector-icons/dist/MaterialIcons";
+import {postData} from "./http";
+import {NavigationActions, StackActions} from "react-navigation";
 
 const { width, height } = Dimensions.get('window');
 const headerShadow = {
@@ -27,6 +39,38 @@ export default class SideBar extends React.Component {
     };
     selectByMedia = (type) => {
         this.props.selectByMedia(type);
+    };
+    logout = () => {
+        AsyncStorage.getItem('userName').then((userName) => {
+            postData('http://127.0.0.1:8000/users/' + userName + '/logout/', {
+                "username": userName,
+            }).then((response) => {
+                if (response.status === 200) {
+                    // console.log(response._bodyText)
+                    response.json().then((response) => {
+                        console.log(response);
+                        if (response.status === "success") {
+                            console.log('成功登出');
+                                this.props.logout();
+                            }
+                        if (response === "fail"){
+                            console.log('登陆失败');
+                            this.setState({
+                                errorText: '用户名或密码错误'
+                            })
+                        }
+                    })
+
+                }
+            }).catch((error) => {
+                console.log(error);
+                this.setState({
+                    errorText: '服务器错误，请重试'
+                })
+            })
+        })
+
+
     };
 
     renderSideItem = (item, index) => {
@@ -77,6 +121,7 @@ export default class SideBar extends React.Component {
                         renderItem={({item, index}) => this.renderSideItem(item, index)}
                         keyExtractor={this._keyExtractorForSideBar}
                     />
+                    <Button onClick={this.logout}>登出</Button>
                 </ScrollView>
             </SafeAreaView>
         );

@@ -59,6 +59,11 @@ export default class Uploader {
                     this.upload()
                 });
                 break;
+            case 'updateName':
+                this.updateName().then(() => {
+                    this.upload()
+                });
+                break;
             default:
                 break;
         }
@@ -183,6 +188,16 @@ export default class Uploader {
                 resolve();
             });
         })
+    });
+    updateName = () => new Promise((resolve, reject) => {
+        setTimeout(() => {
+            console.log(Object.values(this.operations[0])[0]);
+            console.log(this.operations);
+            this.dequeue().then(() => {
+                resolve()
+            });
+        }, 5000)
+
     });
     updateType = () => new Promise((resolve, reject) => {
 

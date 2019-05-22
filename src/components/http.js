@@ -10,6 +10,12 @@ export const postData = (url, data, header) => {
         };
         data = JSON.stringify(data)
     }
+    AsyncStorage.getItem('token').then((response) => {
+
+        header['Authorization'] = 'Token ' + response
+    });
+
+    console.log(header);
     // Default options are marked with *
     return fetch(url, {
         body: data, // must match 'Content-Type' header
@@ -51,13 +57,17 @@ export const deleteData = (url) => {
     })
 };
 
-export const getData = (url, header) => {
+export const getData = (url, header) => new Promise( (resolve) => {
+    AsyncStorage.getItem('token').then((response) => {
+        console.log('token', response);
+        // header['Authorization'] = 'Token ' + response
+        fetch(url, {
+            method: 'GET',
+            headers: header
+        }).then((response)=> resolve(response))
+    });
 
-    return fetch(url, {
-        method: 'GET',
-        headers: header
-    })
-};
+});
 
 export const upload = () => new Promise((resolve, reject) => {
     AsyncStorage.getItem('operations').then((response) => {

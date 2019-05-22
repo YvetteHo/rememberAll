@@ -74,7 +74,6 @@ export const buildRealm = () => new Promise((resolve, reject) =>{
 
 export const queryNotes = (realmObject) => new Promise((resolve, reject) => {
     console.log('queryNotes是否在写', rememberAllRealm.isInTransaction);
-
         if (realmObject) {
             let allNotes = realmObject.objects(NOTE_SCHEMA);
             resolve(allNotes);
@@ -86,8 +85,6 @@ export const queryNotes = (realmObject) => new Promise((resolve, reject) => {
 });
 
 export const queryTypes = () => new Promise((resolve, reject) => {
-
-
         let allTypes = rememberAllRealm.objects(TYPE_SCHEMA);
         resolve(allTypes)
 
@@ -143,20 +140,6 @@ export const updateTypeNotes = (type, noteId) => new Promise((resolve, reject) =
         })
     }
 
-});
-
-export const deleteType = (type) => new Promise((resolve, reject) => {
-    rememberAllRealm.write(() => {
-        let deletingType = rememberAllRealm.objectForPrimaryKey(TYPE_SCHEMA, type);
-        deletingType.notes.forEach((noteId) => {
-            let updatingNote = rememberAllRealm.objectForPrimaryKey(NOTE_SCHEMA, noteId);
-            updatingNote.type = '';
-            updateNote(updatingNote).catch((error) => {
-                console.log(error)
-            });
-        });
-        rememberAllRealm.delete(deletingType)
-    })
 });
 
 export const queryAudios = () => new Promise((resolve, reject) => {
@@ -229,6 +212,7 @@ export const updateNote = (note) => new Promise((resolve, reject) => {
     });
     if (rememberAllRealm.isInTransaction) {
         let updatingNote = rememberAllRealm.objectForPrimaryKey(NOTE_SCHEMA, note.id);
+        console.log(note.name, note.id);
         updatingNote.name = note.name;
         updatingNote.time = note.time;
         updatingNote.noteType = note.noteType;

@@ -1,23 +1,30 @@
 // Main Screens for Drawer Navigator
-import { createStackNavigator,  createAppContainer, createDrawerNavigator  } from 'react-navigation';
+import { createStackNavigator,  createAppContainer} from 'react-navigation';
 
 import HomePage from '../pages/homePage/index';
 import NewNote from '../pages/newNote/index';
 import Login from '../pages/login/index';
 import VideoOperation from '../pages/videoOperation/index'
-import SearchPage from '../pages/searchPage/index'
+import Register from '../pages/Register/index'
 import MyCalendar from  '../pages/calendar/index'
 
-const DrawerNavigator = createStackNavigator({
-    Home: {
-        screen: HomePage,
+const AppRouter = createStackNavigator({
+    Login: {
+        screen: Login,
         navigationOptions: {
             header: null,
             gesturesEnabled: false
         }
     },
-    SearchPage: {
-        screen: SearchPage,
+    Register: {
+        screen: Register,
+        navigationOptions: {
+            header: null,
+            gesturesEnabled: false
+        }
+    },
+    Home: {
+        screen: HomePage,
         navigationOptions: {
             header: null,
             gesturesEnabled: false
@@ -43,26 +50,10 @@ const DrawerNavigator = createStackNavigator({
             header: null,
             gesturesEnabled: false
         }
-    }
+    },
 }, {
-    initialRouteName: 'Home',
+    initialRouteName: 'Login',
 });
 
-export const AppRouter = createStackNavigator({
-    Login: {
-        screen: Login,
-        navigationOptions: {
-            header: null,
-            gesturesEnabled: false
-        }
-    },
-    Drawer: {
-        screen: DrawerNavigator,
-        navigationOptions: {
-            header: null,
-            gesturesEnabled: false
-        }
-    }
-});
 
 export default createAppContainer(AppRouter);

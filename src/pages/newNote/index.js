@@ -71,7 +71,7 @@ export default class NewNote extends React.Component {
             isLoading: false,
             newPicture: '',
             isVideoRecording: false,
-            userId: ''
+            userName: ''
         };
         this.endRecording = this.endRecording.bind(this);
     }
@@ -81,9 +81,9 @@ export default class NewNote extends React.Component {
     };
 
     componentDidMount() {
-        AsyncStorage.getItem('userId').then((response) => {
+        AsyncStorage.getItem('userName').then((response) => {
             this.setState({
-                userId: response
+                userName: response
             })
         });
     }
@@ -191,8 +191,9 @@ export default class NewNote extends React.Component {
     };
 
     updateText = (index) => {
+        console.log(index);
         const oldNoteContent = this.state.noteContent;
-        if (index) {
+        if (index >= 0) {
             oldNoteContent.splice(index, 1);
         } else {
             if (this.state.newValue !== '') {
@@ -248,7 +249,7 @@ export default class NewNote extends React.Component {
             time: note.time,
             noteContent: JSON.stringify(this.state.noteContent),
             noteSkeleton: JSON.stringify(skeleton),
-            user: 'http://127.0.0.1:8000/users/' + this.state.userId + '/'
+            user: 'http://127.0.0.1:8000/users/' + this.state.userName + '/'
         };
         console.log(newNote);
 
@@ -285,7 +286,7 @@ export default class NewNote extends React.Component {
                                         time: note.time,
                                         noteContent: JSON.stringify(this.state.oldNoteContent),
                                         noteSkeleton: JSON.stringify(skeleton),
-                                        user: 'http://127.0.0.1:8000/users/' + this.state.userId + '/'
+                                        user: 'http://127.0.0.1:8000/users/' + this.state.userName + '/'
                                     }
                                 },
                                 {'updatedNote': newNote}]
@@ -346,7 +347,7 @@ export default class NewNote extends React.Component {
 
                 ],
                 'default',
-                '新日志',
+                '',
                 ['请输入日志名']
             );
         } else {
@@ -400,6 +401,7 @@ export default class NewNote extends React.Component {
     renderTextInput = (element, index) => {
         const {value, height} = this.state;
         if (element === '') {
+            console.log('zero')
             this.updateText(index);
         }
 
@@ -407,7 +409,7 @@ export default class NewNote extends React.Component {
             <TextInput
                 // ref={ref => this.textInput = ref}
                 key={index}
-                placeholder="Your Placeholder"
+                placeholder="请输入文字"
                 onChangeText={(text) => {
                     this.state.noteContent[index] = text;
                     this.setState({
