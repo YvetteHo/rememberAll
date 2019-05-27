@@ -83,11 +83,7 @@ export default class HomePage extends React.Component {
             userName: '',
         };
         this.openNote = this.openNote.bind(this);
-        AsyncStorage.getItem('operations').then((response) => {
-            const operations = JSON.parse(response);
-            const uploader = new Uploader(operations);
-            uploader.upload();
-        });
+
     }
 
     componentDidMount() {
@@ -112,7 +108,7 @@ export default class HomePage extends React.Component {
                     notes: notes,
                     isLoading: false,
                 });
-                console.log(Array.from(notes))
+                console.log(Array.from(notes));
                 queryTypes().then((types) => {
                     this.setState({
                         types: types
@@ -123,7 +119,6 @@ export default class HomePage extends React.Component {
                 rememberAllRealm.addListener('change', () => {
                     if (!rememberAllRealm.isInTransaction) {
                         this.reloadData();
-                        console.log('change');
                     }
                 });
 
@@ -144,6 +139,7 @@ export default class HomePage extends React.Component {
         }
     }
     showSortedNotes = (notes) => {
+        console.log('sorted')
         this.setState({
             notesOnSearch: notes,
             notes: notes
@@ -153,6 +149,7 @@ export default class HomePage extends React.Component {
     search = () => {
 
         sortByText(this.state.notesOnSearch, this.state.searchContent).then((notes) => {
+            console.log('sorted')
             this.setState({
                 notes: notes,
             });
@@ -177,8 +174,9 @@ export default class HomePage extends React.Component {
     };
 
     reloadData = () => {
-        queryNotes().then((notes) => {
 
+        queryNotes().then((notes) => {
+            console.log(Array.from(notes));
             this.setState({
                 notesOnSearch: notes,
                 notes: notes,
@@ -187,9 +185,6 @@ export default class HomePage extends React.Component {
 
         }).catch((error) => {
             console.log(error);
-            this.setState({
-                notes: []
-            })
         });
         queryTypes().then((types) => {
             this.setState({
@@ -311,7 +306,6 @@ export default class HomePage extends React.Component {
     };
 
     rename = (name, note) => {
-        console.log(name, note);
         beginTrans().then(() => {
                 updateNote({
                     id: note.id,
@@ -320,10 +314,10 @@ export default class HomePage extends React.Component {
                     time: note.time,
                     noteContent: note.noteContent,
                     noteSkeleton: note.noteSkeleton
-                }).then(() => {
-                    console.log('成功')
+                }).then((note) => {
                     AsyncStorage.getItem('operations').then((response) => {
                         let operations = JSON.parse(response);
+
                         operations.push({
                             'updateName': {
                                 noteId: note.id,
@@ -430,34 +424,52 @@ export default class HomePage extends React.Component {
         });
 
         let typeIndex = types.indexOf(note.noteType);
-        console.log(types, typeIndex)
         let colors = ['#f44336', '#ff9800', '#ffeb3b', '#8bc34a', '#03a9f4'];
 
         return (
-            <SwipeAction right={swipeOutButtons} key={index} style={{marginBottom: 5}}>
-                <TouchableWithoutFeedback onPress={() => this.openNote(note)}>
-                    <View key={index} style={[styles.noteContainer2, {flex: 1, height: 85, width: width, backgroundColor: 'white'}]}>
+            <SwipeAction
+                right={swipeOutButtons}
+                key={index}
+                style={{marginBottom: 5}}>
+                <TouchableWithoutFeedback
+                    onPress={() => this.openNote(note)}>
+                    <View
+                        key={index}
+                        style={[styles.noteContainer2, {flex: 1, height: 85, width: width, backgroundColor: 'white'}]}>
                         <View style={styles.noteContainer}>
                             <View style={styles.rowContainer}>
-                                <Text style={{marginRight: 10, marginBottom: 10, fontSize: 18}}>{note.name}</Text>
-                                {typeIndex !== -1 ? <IIcon style={{marginBottom: 10}} name="ios-bookmark" size={15} color={colors[typeIndex]}/> : <View/>}
-
+                                <Text
+                                    style={{marginRight: 10, marginBottom: 10, fontSize: 18}}>
+                                    {note.name}
+                                </Text>
+                                {typeIndex !== -1 ?
+                                    <IIcon style={{marginBottom: 10}}
+                                           name="ios-bookmark" size={15}
+                                           color={colors[typeIndex]}/> : <View/>}
                             </View>
                             <View style={styles.rowContainer}>
-                                <Text numberOfLines={1} style={{marginRight: 10, marginBottom: 10}}>{note.noteSkeleton[0]}</Text>
+                                <Text
+                                    numberOfLines={1}
+                                    style={{marginRight: 10, marginBottom: 10}}>
+                                    {note.noteSkeleton[0]}
+                                </Text>
                             </View>
                             <View style={styles.rowContainer}>
-                                <Text>{note.time.toLocaleString()}</Text>
-                                {note.noteSkeleton[1] === 'true' ? <Icon name="mic" size={15} color="#FF5722"/> : <View/>}
-                                {note.noteSkeleton[2] === 'true' ? <Icon name="videocam" size={15} color="#FF5722"/> : <View/>}
+                                <Text>
+                                    {note.time.toLocaleString()}
+                                </Text>
+                                {note.noteSkeleton[1] === 'true' ?
+                                    <Icon name="mic" size={15} color="#FF5722"/> : <View/>}
+                                {note.noteSkeleton[2] === 'true' ?
+                                    <Icon name="videocam" size={15} color="#FF5722"/> : <View/>}
                             </View>
                         </View>
-                        {note.noteSkeleton[3] !== '' ? <Image
-                            key={index}
-                            source={{uri: DocumentDirectoryPath + '/images/' + note.noteSkeleton[3] + '.jpg'}}
-                            style={{width: 50, height: 50, justifyContent: 'flex-end', marginRight: 10, resizeMode: 'cover'}}
+                        {note.noteSkeleton[3] !== '' ?
+                            <Image
+                                key={index}
+                                source={{uri: 'file://' + DocumentDirectoryPath + '/images/' + note.noteSkeleton[3] + '.jpg'}}
+                                style={{width: 50, height: 50, justifyContent: 'flex-end', marginRight: 10, resizeMode: 'cover'}}
                         /> : <View/>}
-
                     </View>
                 </TouchableWithoutFeedback>
             </SwipeAction>
@@ -479,6 +491,7 @@ export default class HomePage extends React.Component {
     };
     selectType = (type) => {
         let notes = Array.from(sortById(type.notes));
+        console.log('sorted')
         sortById(type.notes).then((notes) => {
             this.setState({
                 notesOnSearch: notes,
@@ -492,8 +505,9 @@ export default class HomePage extends React.Component {
         // console.log(Array.from(type.notes));
     };
     selectByMedia = (type) => {
+        console.log('sorted')
+
         sortByMediaType(type).then((notes) => {
-            console.log(notes);
             this.setState({
                 notes: notes,
                 notesOnSearch: notes
@@ -504,11 +518,18 @@ export default class HomePage extends React.Component {
     };
 // `http://127.0.0.1:8000/user/?id=${userId}`
     fetch = () => {
-        AsyncStorage.getItem('token').then((token) => {
-            // console.log('http://127.0.0.1:8000/notes/' + ' -H ' + '\'Authorization: Token ' + token + '\'');
-        getData('http://127.0.0.1:8000/notes/', {Authorization: 'Token ' + token}).then((response) => {
-            console.log(response)
-        }) })
+        AsyncStorage.getItem('operations').then((response) => {
+            console.log('开始上传');
+            const operations = JSON.parse(response);
+            const uploader = new Uploader(operations);
+            uploader.upload();
+        });
+
+        // AsyncStorage.getItem('token').then((token) => {
+        //     // console.log('http://127.0.0.1:8000/notes/' + ' -H ' + '\'Authorization: Token ' + token + '\'');
+        // getData('http://127.0.0.1:8000/notes/', {Authorization: 'Token ' + token}).then((response) => {
+        //     console.log(response)
+        // }) })
         // this.getData('http://127.0.0.1:8000/users', {'userId': '2'})
         // this.postData('http://127.0.0.1:8000/users/', {
         //     "id": 'ab46f6c2-72e2-11e9-a61d-acde48001122',
@@ -590,7 +611,8 @@ export default class HomePage extends React.Component {
 
         return (
             <Fragment>
-                <SafeAreaView style={{flex: 0, backgroundColor: 'white'}}/>
+
+                {/*<SafeAreaView style={{flex: 0, backgroundColor: 'white'}}/>*/}
                 <View style={styles.container}>
                     {this.state.isLoading ? <View style={styles.maskView}/> : <View/>}
                     {this.state.isLoading ?
@@ -634,7 +656,7 @@ export default class HomePage extends React.Component {
                                 <FontIcon name="search" size={20} color={this.state.searchColor}/>
                                 <TextInput
                                     style={{width: '90%', height: 30, borderColor: '#f5f5f5', borderWidth: 0.5, borderRadius: 5,
-                                        backgroundColor: 'white'}}
+                                        backgroundColor: 'white', paddingBottom: 0, paddingTop: 0}}
                                     placeholder='搜索'
                                     onBlur={() => {
                                         this.setState({
@@ -644,7 +666,6 @@ export default class HomePage extends React.Component {
                                     onChangeText={(text) => {
                                         this.state.searchContent = text;
                                         this.search(text);
-
                                     }}
                                 />
                             </View>
@@ -655,7 +676,7 @@ export default class HomePage extends React.Component {
                                     keyExtractor={this._keyExtractor}
                                 />
                             </ScrollView>
-                            {/*<Button onClick={this.fetch}>fetch</Button>*/}
+                            <Button onClick={this.fetch}>fetch</Button>
                             {/*<View style={{position: 'absolute', left: 0, right: 0, bottom: 6, alignItems: 'center'}}>*/}
                             {/*    <Svg*/}
                             {/*        height="52"*/}

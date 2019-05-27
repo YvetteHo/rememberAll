@@ -8,6 +8,8 @@
 	<string>Need Microphone to take videos</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Need Photo Library Usage to save videos and photos</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Need Photo Library Usage to launch photos</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>

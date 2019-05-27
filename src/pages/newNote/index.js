@@ -27,7 +27,7 @@ import {
     updateNote,
     deleteAudio,
     cancelTrans,
-    commitTrans, deletePicture, insertPicture, deleteVideo, showNotesSkeleton,
+    commitTrans, deletePicture, insertPicture, deleteVideo, showNotesSkeleton, insertVideo,
 } from "../../database/schemas";
 import Sound from "react-native-sound";
 import FullWidthImage from "../../components/FullWidthImage";
@@ -41,8 +41,10 @@ const uuid = require('uuid/v1');
 const demessions = Dimensions.get('window');
 
 const options = {
-    title: 'Select picture',
-    // customButtons: [{ name: 'fb', title: 'Choose Photo from Facebook' }],
+    title: '插入图片',
+    cancelButtonTitle: '取消',
+    takePhotoButtonTitle: '拍照',
+    chooseFromLibraryButtonTitle: '选择照片',
     storageOptions: {
         skipBackup: true,
         path: 'images',
@@ -71,7 +73,8 @@ export default class NewNote extends React.Component {
             isLoading: false,
             newPicture: '',
             isVideoRecording: false,
-            userName: ''
+            userName: '',
+            userPK: 0,
         };
         this.endRecording = this.endRecording.bind(this);
     }
@@ -81,10 +84,15 @@ export default class NewNote extends React.Component {
     };
 
     componentDidMount() {
-        AsyncStorage.getItem('userName').then((response) => {
+        AsyncStorage.getItem('pk').then((response) => {
             this.setState({
-                userName: response
+                userPK: response
             })
+        });
+        exists("DocumentDirectoryPath" + '/images').then((exists) => {
+            if (!exists) {
+                mkdir(DocumentDirectoryPath + '/images').then();
+            }
         });
     }
 
@@ -134,24 +142,26 @@ export default class NewNote extends React.Component {
     };
     cameraClicked = () => {
         ImagePicker.showImagePicker(options, (response) => {
-            console.log('Response = ', response);
-
             if (response.didCancel) {
                 console.log('User cancelled image picker');
             } else if (response.error) {
                 console.log('ImagePicker Error: ', response.error);
-            } else if (response.customButton) {
-                console.log('User tapped custom button: ', response.customButton);
             } else {
-                console.log();
-                // CameraRoll.saveToCameraRoll(response.uri, 'photo');
+                const fileNameWithSuffix = response.uri.substr(response.uri.lastIndexOf('/') + 1);
+                let fileName = fileNameWithSuffix.substr(0, fileNameWithSuffix.lastIndexOf('.'));
 
-                const lastLine = response.uri.lastIndexOf('/');
-                const fileName = response.uri.substr(lastLine + 1);
-                const lastDot = fileName.lastIndexOf('.');
-                const uriId = fileName.substr(0, lastDot);
+                if (Platform.OS === 'android') {
+                    fileName = fileNameWithSuffix;
+                    console.log(DocumentDirectoryPath + '/images/' + fileName + '.jpg');
+                    moveFile(response.uri, DocumentDirectoryPath + '/images/' + fileName + '.jpg').then(
+                        () => {
+                            console.log('移动成功')
+                        }
+                    ).catch((error) => {
+                        console.warn(error)
+                    });
+                }
 
-                console.log(fileName, uriId);
                 // You can also display the image using data:
                 // const source = { uri: 'data:image/jpeg;base64,' + response.data };
                 // let formData = new FormData();
@@ -169,16 +179,13 @@ export default class NewNote extends React.Component {
                 // }).catch((error) => {
                 //     console.log(error)
                 // })
-                this.setState({
-                    newPicture: {uri: response.uri},
-                });
                 const oldNoteContent = this.state.noteContent;
-                oldNoteContent.push('*#image#*' + uriId);
+                oldNoteContent.push('*#image#*' + fileName);
                 this.setState({
                     noteContent: oldNoteContent,
                     change: true
                 });
-                insertPicture({uuid: '*#image#*' + uriId, uri: fileName, noteId: this.state.note.id})
+                insertPicture({uuid: '*#image#*' + fileName, uri: fileNameWithSuffix, noteId: this.state.note.id})
             }
 
         });
@@ -211,6 +218,12 @@ export default class NewNote extends React.Component {
 
     endRecording(id) {
         console.log('结束了哦');
+        if (!id) {
+            this.setState({
+                recording: false,
+            });
+            return;
+        }
 
         const oldNoteContent = this.state.noteContent;
         this.updateText();
@@ -249,7 +262,7 @@ export default class NewNote extends React.Component {
             time: note.time,
             noteContent: JSON.stringify(this.state.noteContent),
             noteSkeleton: JSON.stringify(skeleton),
-            user: 'http://127.0.0.1:8000/users/' + this.state.userName + '/'
+            user: this.state.userPK
         };
         console.log(newNote);
 
@@ -260,12 +273,15 @@ export default class NewNote extends React.Component {
             time: note.time,
             noteContent: this.state.noteContent,
             noteSkeleton: skeleton
-        }).then(() => {
+        }).then((updatedNote) => {
+            newNote.noteSkeleton = JSON.stringify(Array.from(updatedNote['noteSkeleton']));
+
             commitTrans().then(() => {
                 if (isNew) {
                     console.log('newNote', newNote)
                     AsyncStorage.getItem('operations').then((response) => {
                         let operations = JSON.parse(response);
+
                         operations.push({
                             'newNote': newNote
                         });
@@ -274,7 +290,7 @@ export default class NewNote extends React.Component {
                 } else {
                     AsyncStorage.getItem('operations').then((response) => {
                         let operations = JSON.parse(response);
-                        console.log('newNote', newNote)
+                        console.log('newNote', newNote);
 
                         operations.push({
                             'updateNoteContent': [
@@ -286,7 +302,7 @@ export default class NewNote extends React.Component {
                                         time: note.time,
                                         noteContent: JSON.stringify(this.state.oldNoteContent),
                                         noteSkeleton: JSON.stringify(skeleton),
-                                        user: 'http://127.0.0.1:8000/users/' + this.state.userName + '/'
+                                        user: this.state.userPK
                                     }
                                 },
                                 {'updatedNote': newNote}]
@@ -574,12 +590,11 @@ export default class NewNote extends React.Component {
                                 onChangeText={this.onChangeText}
                                 selection={selection}
                                 onSelectionChange={this.handleSelectionChange}
-                                style={styles.textInputStyle}
                                 editable
                                 multiline
                                 value={newValue}
+                                style={styles.textInputStyle}
                                 onContentSizeChange={(e) => {
-                                    // this.measureTextInput()
                                     this.updateSize(e.nativeEvent.contentSize.height)
 
                                 }}
@@ -715,6 +730,8 @@ const styles = StyleSheet.create({
     },
     textInputStyle: {
         fontSize: 20,
+        marginLeft: 5,
+        marginRight: 5,
     },
     canvasContainer: {
         flex: 1,

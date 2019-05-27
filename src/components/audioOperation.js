@@ -13,8 +13,10 @@ import {
     TouchableHighlight,
     Platform,
     PermissionsAndroid,
-} from 'react-native';
 
+} from 'react-native';
+import {WhiteSpace, Card, Modal, SwipeAction, TextareaItem, Toast} from 'antd-mobile-rn';
+// import Permissions from 'react-native-permissions'
 import {AudioRecorder, AudioUtils} from 'react-native-audio';
 import Sound from 'react-native-sound';
 import Icon from "react-native-vector-icons/dist/MaterialIcons";
@@ -41,10 +43,11 @@ async function requestAudioPermission() {
             },
         );
         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-            console.log('您可以使用麦克风了');
+            console.warn('您可以使用麦克风了');
         } else {
             console.log('拒绝使用');
         }
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
     } catch (err) {
         console.warn(err);
     }
@@ -65,7 +68,60 @@ export default class AudioOperation extends React.Component {
             uuidForAudio: uuid()
         };
     }
+    componentDidMount() {
+        exists(DocumentDirectoryPath + '/audios').then((exists) => {
+            if (!exists) {
+                mkdir(DocumentDirectoryPath + '/audios').then();
+            }
+        });
 
+        AudioRecorder.checkAuthorizationStatus().then((isAuthorised) => {
+            // console.warn('是否有权限', isAuthorised);
+            this.setState({
+                hasPermission: isAuthorised });
+            if (isAuthorised === 'undetermined') {
+
+            }
+            if (!isAuthorised) {
+                console.warn('没有', isAuthorised);
+
+                if(Platform.OS === 'android') {
+                    requestAudioPermission().then(
+                        (isGranted) => {
+                            if (isGranted) {
+                                console.warn(isGranted, isAuthorised);
+                                this.setState({ hasPermission: !isAuthorised });
+                                this.startRecording();
+                            } else {
+                                this.props.endRecording();
+                            }
+                        }
+                    );
+                }
+            } else {
+                console.warn('有', isAuthorised);
+                this.startRecording();
+            }
+        });
+    }
+
+    startRecording = () => {
+
+        this.prepareRecordingPath(this.state.audioPath);
+
+        AudioRecorder.onProgress = (data) => {
+            this.setState({currentTime: Math.floor(data.currentTime)});
+        };
+
+        AudioRecorder.onFinished = (data) => {
+            // Android callback comes in the form of a promise instead.
+            if (Platform.OS === 'ios') {
+                this._finishRecording(data.status === "OK", data.audioFileURL, data.audioFileSize);
+            }
+            insertAudio({uuid: '*#audio#*' + uuidForAudio, uri: uuidForAudio + '.aac',noteId: this.props.note.id || ''});
+            this.endRecording('*#audio#*' + uuidForAudio);
+        };
+    };
     prepareRecordingPath = (audioPath) => {
         AudioRecorder.prepareRecordingAtPath(audioPath, {
             SampleRate: 22050,
@@ -95,29 +151,7 @@ export default class AudioOperation extends React.Component {
         }
     };
 
-    _renderButton = (title, onPress, active) => {
-        const style = (active) ? styles.activeButtonText : styles.buttonText;
 
-        return (
-            <TouchableHighlight style={styles.button} onPress={onPress}>
-                <Text style={style}>
-                    {title}
-                </Text>
-            </TouchableHighlight>
-        );
-    };
-
-    _renderPauseButton = (onPress, active) => {
-        const style = (active) ? styles.activeButtonText : styles.buttonText;
-        const title = this.state.paused ? "RESUME" : "PAUSE";
-        return (
-            <TouchableHighlight style={styles.button} onPress={onPress}>
-                <Text style={style}>
-                    {title}
-                </Text>
-            </TouchableHighlight>
-        );
-    };
 
     async _pause() {
         if (!this.state.recording) {
@@ -171,9 +205,19 @@ export default class AudioOperation extends React.Component {
             console.warn('Already recording!');
             return;
         }
+        console.warn(this.state.hasPermission);
 
-        if (!this.state.hasPermission) {
-            console.warn('Can\'t record, no permission granted!');
+        if (!this.state.hasPermission || this.state.hasPermission==="denied") {
+            // console.warn('Can\'t record, no permission granted!');
+            Modal.alert('请在应用设置中允许录音权限', null, [
+                {
+                    text: '确定',
+                    onPress: () => {
+                        this.props.endRecording();
+                    },
+                    style: 'cancel',
+                }]
+            );
             return;
         }
 
@@ -195,45 +239,7 @@ export default class AudioOperation extends React.Component {
         console.log(`Finished recording of duration ${this.state.currentTime} seconds at path: ${filePath} and size of ${fileSize || 0} bytes`);
     }
 
-    componentDidMount() {
-        exists(DocumentDirectoryPath + '/audios').then((exists) => {
-            if (!exists) {
-                mkdir(DocumentDirectoryPath + '/audios').then();
-            }
-        });
-        if(Platform.OS === 'android') {
-            requestAudioPermission().then(
-            );
-        }
 
-        AudioRecorder.checkAuthorizationStatus().then((isAuthorised) => {
-            this.setState({ hasPermission: isAuthorised });
-            if (!isAuthorised) return;
-
-            this.prepareRecordingPath(this.state.audioPath);
-
-            AudioRecorder.onProgress = (data) => {
-                this.setState({currentTime: Math.floor(data.currentTime)});
-            };
-
-            AudioRecorder.onFinished = (data) => {
-                // Android callback comes in the form of a promise instead.
-                if (Platform.OS === 'ios') {
-                    this._finishRecording(data.status === "OK", data.audioFileURL, data.audioFileSize);
-                }
-
-                // moveFile(this.state.audioPath, DocumentDirectoryPath + '/audios/' + uuidForAudio + '.aac').then(
-                //     () => {
-                //
-
-                // );
-                insertAudio({uuid: '*#audio#*' + uuidForAudio, uri: uuidForAudio + '.aac',noteId: this.props.note.id || ''});
-                this.endRecording('*#audio#*' + uuidForAudio);
-
-
-            };
-        });
-    }
     endRecording = (id) => {
         this.props.endRecording(id);
         console.log('end')

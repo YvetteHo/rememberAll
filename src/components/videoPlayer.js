@@ -19,13 +19,14 @@ export default class MyVideoPlayer extends Component {
     }
 
     render() {
+        console.warn('file://' + DocumentDirectoryPath + '/videos/' + this.props.videoName + '.mp4');
         return (
             <View>
                 {/*<Text style={{ fontSize: 22, marginTop: 22 }}>React Native Video Player</Text>*/}
                 <VideoPlayer
                     endWithThumbnail
                     // thumbnail={{ uri: this.state.thumbnailUrl }}
-                    video={{ uri: DocumentDirectoryPath + '/videos/' + this.props.videoName + '.mov' }}
+                    video={{ uri: 'file://' + DocumentDirectoryPath + '/videos/' + this.props.videoName + '.mp4' }}
                     videoWidth={this.state.video.width}
                     videoHeight={this.state.video.height}
                     duration={this.state.video.duration}

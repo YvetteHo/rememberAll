@@ -9,7 +9,7 @@ import {
     TouchableWithoutFeedback,
     Dimensions,
     SafeAreaView,
-    CameraRoll,
+    CameraRoll, Platform,
 } from 'react-native';
 // eslint-disable-next-line import/no-unresolved
 import { RNCamera } from 'react-native-camera';
@@ -67,9 +67,16 @@ export default class VideoOperation extends React.Component {
                     const lastLine = data.uri.lastIndexOf('/');
                     const fileName = data.uri.substr(lastLine + 1);
                     const lastDot = fileName.lastIndexOf('.');
-                    const uriId = fileName.substr(0, lastDot);
-                    console.warn(data, data['uri'], data.uri);
-                    console.warn(DocumentDirectoryPath + '/videos/' + uriId + '.mp4');
+                    let uriId = fileName.substr(0, lastDot);
+
+                    if (Platform.OS === 'android') {
+                        uriId = fileName;
+                        console.log(DocumentDirectoryPath + '/videos/' + uriId + '.mp4');
+                    }
+
+                    // console.warn(data, data['uri'], data.uri);
+                    // console.warn(DocumentDirectoryPath + '/videos/' + uriId + '.mp4');
+
                     moveFile(data.uri, DocumentDirectoryPath + '/videos/' + uriId + '.mp4').then(
                         () => {
                             CameraRoll.saveToCameraRoll(DocumentDirectoryPath + '/videos/' + uriId + '.mp4', 'video');

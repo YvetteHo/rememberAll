@@ -29,7 +29,7 @@ export default class Register extends React.Component{
     }
 
     register = () => {
-        postData('http://127.0.0.1:8000/users/', {
+        postData('users/', {
             "username": this.state.userName,
             "password": this.state.password,
         }).then((response) => {
@@ -41,6 +41,8 @@ export default class Register extends React.Component{
                         console.log('成功');
                         console.log(response);
                         AsyncStorage.setItem('token', response.token);
+                        AsyncStorage.setItem('pk', JSON.stringify(response.pk));
+
                         AsyncStorage.setItem('userName', this.state.userName).then((response) => {
                             console.log(response);
                             console.log('成功登陆');

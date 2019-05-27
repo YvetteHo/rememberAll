@@ -42,9 +42,9 @@ export default class SideBar extends React.Component {
     };
     logout = () => {
         AsyncStorage.getItem('userName').then((userName) => {
-            postData('http://127.0.0.1:8000/users/' + userName + '/logout/', {
+            postData('users/' + userName + '/logout/', {
                 "username": userName,
-            }).then((response) => {
+            }, null, 'users').then((response) => {
                 if (response.status === 200) {
                     // console.log(response._bodyText)
                     response.json().then((response) => {
@@ -91,7 +91,7 @@ export default class SideBar extends React.Component {
 
         return (
             <SafeAreaView style={{flex: 1, backgroundColor: '#fff'}}>
-                <ScrollView style={{backgroundColor: 'white'}}>
+                <ScrollView style={{backgroundColor: 'white', marginTop: 20}}>
                     <View>
                         <TouchableOpacity onPress={() => this.selectByMedia('audio')}>
 
@@ -115,13 +115,25 @@ export default class SideBar extends React.Component {
                         </View>
                         </TouchableOpacity>
                     </View>
-                    <Text>笔记类型</Text>
+                    <View
+                        style={{
+                            borderBottomColor: '#e0e0e0',
+                            borderBottomWidth: 1,
+                        }}
+                    />
                     <FlatList
                         data={this.props.types}
                         renderItem={({item, index}) => this.renderSideItem(item, index)}
                         keyExtractor={this._keyExtractorForSideBar}
                     />
-                    <Button onClick={this.logout}>登出</Button>
+
+                    <View style={styles.rowContainer}>
+                        <Button
+                            style={{width: '90%', backgroundColor: '#FF5722'}}
+                            onClick={this.logout}
+                        ><Text style={{color: 'white'}}>登出</Text></Button>
+                    </View>
+
                 </ScrollView>
             </SafeAreaView>
         );
@@ -149,11 +161,9 @@ const styles = StyleSheet.create({
         // backgroundColor: '#f5f5f5'
     },
     rowContainer: {
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         flexDirection: 'row',
-        marginLeft: 10,
-        marginRight: 10,
-        marginTop: 10,
+        alignItems: 'center',
     },
     buttonCenter: {
         alignItems: 'center',

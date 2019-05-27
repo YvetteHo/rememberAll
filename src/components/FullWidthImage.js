@@ -29,7 +29,7 @@ export default class FullWidthImage extends React.Component{
     }
     componentDidMount() {
 
-        uri = DocumentDirectoryPath + '/images/' + this.props.uriId + '.jpg';
+        uri = 'file://' + DocumentDirectoryPath + '/images/' + this.props.uriId + '.jpg';
         console.log(uri);
         Image.getSize(uri, (width, height) => {
             let imageScale = width / height;
@@ -55,7 +55,7 @@ export default class FullWidthImage extends React.Component{
                 >
                     <Image
                         key={this.props.index}
-                        source={{uri: uri}}
+                        source={{uri: DocumentDirectoryPath + '/images/' + this.props.uriId + '.jpg'}}
                         style={{width: this.state.pictureWidth, height: this.state.pictureHeight}}
                     />
                 </Placeholder.ImageContent>

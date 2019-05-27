@@ -76,18 +76,17 @@ export const queryNotes = (realmObject) => new Promise((resolve, reject) => {
     console.log('queryNotes是否在写', rememberAllRealm.isInTransaction);
         if (realmObject) {
             let allNotes = realmObject.objects(NOTE_SCHEMA);
-            resolve(allNotes);
+            resolve(allNotes.sorted('time'))
 
         } else {
             let allNotes = rememberAllRealm.objects(NOTE_SCHEMA);
-            resolve(allNotes)
+            resolve(allNotes.sorted('time'))
         }
 });
 
 export const queryTypes = () => new Promise((resolve, reject) => {
         let allTypes = rememberAllRealm.objects(TYPE_SCHEMA);
         resolve(allTypes)
-
 });
 
 export const updateType = (type, noteId) => new Promise((resolve, reject) => {
@@ -219,7 +218,7 @@ export const updateNote = (note) => new Promise((resolve, reject) => {
         updatingNote.noteContent = note.noteContent;
 
         updatingNote.noteSkeleton = result;
-        resolve()
+        resolve(updatingNote)
     } else {
         rememberAllRealm.write(() => {
             let updatingNote = rememberAllRealm.objectForPrimaryKey(NOTE_SCHEMA, note.id);
@@ -229,7 +228,7 @@ export const updateNote = (note) => new Promise((resolve, reject) => {
             updatingNote.noteContent = note.noteContent;
 
             updatingNote.noteSkeleton = result;
-            resolve()
+            resolve(updatingNote)
         })
     }
 
@@ -416,30 +415,25 @@ export const sortById = (notes) => new Promise((resolve, reject) => {
 });
 
 
-export const sortByText = (notes, text) => new Promise((resolve, reject) => {
-    console.log('是否在写', rememberAllRealm.isInTransaction);
-
-    // console.log(startTime, endTime);
-    console.log(text);
+export const sortByText = (notes, text) => new Promise((resolve) => {
     text = text.toLowerCase();
-    // text = 'am';
-    // let notes = rememberAllRealm.objects(NOTE_SCHEMA);
-    let sortedNotes = notes.filter(obj => { return obj.noteContent.reduce((aac, content)  => {
-        if (text === '') {
+    let sortedNotes = notes.filter(obj => {
+        if (obj.name.toLowerCase().indexOf(text) > -1) {
             return true
         }
-        if (content.slice(0, 9) === '*#audio#*' || content.slice(0, 9) === '*#video#*' || content.slice(0, 9) === '*#image#*') {
-            return aac
-        }
-        if(content.toLowerCase().indexOf(text) > -1){
-            console.log(true, content);
-            return true
-        }
-
+        return obj.noteContent.reduce((aac, content)  => {
+            if (content.slice(0, 9) === '*#audio#*' || content.slice(0, 9) === '*#video#*' || content.slice(0, 9) === '*#image#*') {
+                return aac
+            }
+            if (text === '') {
+                return true
+            }
+            if(content.toLowerCase().indexOf(text) > -1){
+                return true
+            }
         return aac
-
     }, false)});
-    console.log(Array.from(sortedNotes));
+
     resolve(sortedNotes)
 });
 

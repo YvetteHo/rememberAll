@@ -14,6 +14,9 @@ export default class Login extends React.Component {
             password: '',
             errorText: '',
         };
+        AsyncStorage.setItem('operations', '[]');
+        // this.props.navigation.navigate('Home');
+
     }
 
     register = () => {
@@ -21,16 +24,24 @@ export default class Login extends React.Component {
     };
 
     login = () => {
-        postData('http://127.0.0.1:8000/users/' + this.state.userName + '/login/', {
+        postData('users/' + this.state.userName + '/login/', {
             "username": this.state.userName,
             "password": this.state.password,
-        }).then((response) => {
+        }, null, 'users').then((response) => {
             if (response.status === 200) {
                 response.json().then((response) => {
                     if (response.status === "success") {
                         console.log('token', response.token);
                         AsyncStorage.setItem('token', response.token);
+                        AsyncStorage.setItem('pk', JSON.stringify(response.pk));
                         AsyncStorage.setItem('userName', this.state.userName);
+                        AsyncStorage.getItem('operations').catch(
+                            () => {
+                                console.log('没有操作')
+                                AsyncStorage.setItem('operations', '[]')
+                            }
+                        );
+
                         this.props.navigation.navigate('Home');
                     }
                     if (response.status === "fail") {

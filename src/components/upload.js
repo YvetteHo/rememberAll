@@ -74,19 +74,19 @@ export default class Uploader {
             let newOperations = JSON.parse(response);
             this.operations = newOperations;
             this.operations.shift();
-            console.log(this.operations)
-            AsyncStorage.setItem('operations', JSON.stringify(this.operations)).then(resolve());
+            AsyncStorage.setItem('operations', JSON.stringify(this.operations)).then(
+                resolve()
+            );
         });
     });
 
     uploadFile = (file, noteId, id) => new Promise((resolve, reject) => {
         let formData = new FormData();
-        console.log(file, noteId);
         formData.append('file', file);
-        formData.append('note', '26e684d0-7655-11e9-8d22-25264e2270d3');
+        formData.append('note', noteId);
         formData.append('id', id);
 
-        postData('http://127.0.0.1:8000/files/', formData, {
+        postData('files/', formData, {
             'content-type': 'multipart/form-data'
         }).then(response => {
             console.log(response)
@@ -94,9 +94,31 @@ export default class Uploader {
             console.log(error)
         })
     });
+    deleteFiles = (noteContent, noteId) => new Promise(resolve => {
+        if (noteContent.length === 0) {
+            resolve()
+        }
+
+        noteContent.forEach((item, index) => {
+            const type = item.substr(0, 9);
+            const fileName = item.substr(9);
+            if (type === '*#image#*' || type === '*#audio#*' || type === '*#video#*') {
+                deleteData('files/' + fileName + '/').then(() => {
+                    if (index === noteContent.length - 1) {
+                        resolve();
+                    }
+                })
+            }
+
+
+        });
+
+    });
 
     uploadFiles = (noteContent, noteId) => new Promise(resolve => {
-        console.log(noteContent, noteId);
+        if (noteContent.length === 0) {
+            resolve()
+        }
 
         noteContent.forEach((item, index) => {
             const type = item.substr(0, 9);
@@ -107,7 +129,8 @@ export default class Uploader {
                         uri: DocumentDirectoryPath + '/images/' + fileName + '.jpg',
                         type: 'image/jpeg',
                         name: fileName + '.jpg',
-                    }, noteId, fileName);
+                    }, noteId, fileName)
+
                     break;
                 case '*#audio#*':
                     this.uploadFile({
@@ -140,8 +163,7 @@ export default class Uploader {
 
         let operation = Object.values(this.operations[0])[0];
 
-        console.log('操作', operation);
-        postData('http://127.0.0.1:8000/notes/', operation).then((response) => {
+        postData('notes/', operation).then((response) => {
             console.log(response)
             setTimeout(() => {
                 this.uploadFiles(JSON.parse(operation.noteContent), operation.id).then(
@@ -161,54 +183,55 @@ export default class Uploader {
         let oldNote = operation[0].oldNote;
         let updatedNote = operation[1].updatedNote;
 
-        console.log(oldNote, updatedNote, oldNote.id);
-        console.log(oldNote.noteContent, updatedNote.noteContent)
-
 
         let oldNoteContent = JSON.parse(oldNote.noteContent);
         let newNoteContent = JSON.parse(updatedNote.noteContent);
 
         let intersection = oldNoteContent.filter(x => newNoteContent.includes(x));
         let oldOnly = oldNoteContent.filter(x => !newNoteContent.includes(x));
-        let newOnly = oldNoteContent.filter(x => !newNoteContent.includes(x));
+        let newOnly = newNoteContent.filter(x => !oldNoteContent.includes(x));
 
-        console.log(intersection, oldOnly, newOnly);
-        putData('http://127.0.0.1:8000/notes/' + oldNote.id + '/', updatedNote).then((response) => {
-            console.log(response)
-            this.dequeue().then(() => {
-                resolve()
+        putData('notes/' + oldNote.id + '/', updatedNote).then((response) => {
+            this.uploadFiles(newOnly, oldNote.id).then(() => {
+                console.log(response);
+                this.dequeue().then(() => {
+                    resolve()
+                });
             });
+            this.deleteFiles(oldOnly, oldNote.id)
         })
     });
     deleteNote = () => new Promise((resolve, reject) => {
         let operation = Object.values(this.operations[0])[0];
-        console.log(operation)
-        deleteData('http://127.0.0.1:8000/notes/' + operation + '/').then(() => {
+        deleteData('notes/' + operation + '/').then(() => {
             this.dequeue().then(() => {
                 resolve();
             });
         })
     });
     updateName = () => new Promise((resolve, reject) => {
-        setTimeout(() => {
-            console.log(Object.values(this.operations[0])[0]);
-            console.log(this.operations);
+        let operation = Object.values(this.operations[0])[0];
+        putData('notes/' + operation.noteId + '/', {name: operation.noteName}).then(() => {
             this.dequeue().then(() => {
-                resolve()
+                resolve();
             });
-        }, 5000)
+        })
+        // setTimeout(() => {
+        //     console.log(Object.values(this.operations[0])[0]);
+        //     console.log(this.operations);
+        //     this.dequeue().then(() => {
+        //         resolve()
+        //     });
+        // }, 5000)
 
     });
     updateType = () => new Promise((resolve, reject) => {
-
-
-        setTimeout(() => {
-            console.log(Object.values(this.operations[0])[0]);
-            console.log(this.operations);
+        let operation = Object.values(this.operations[0])[0];
+        putData('notes/' + operation.noteId + '/', {noteType: operation.noteType}).then(() => {
             this.dequeue().then(() => {
-                resolve()
+                resolve();
             });
-        }, 5000)
+        })
 
     });
 }
