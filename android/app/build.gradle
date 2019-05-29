@@ -96,10 +96,7 @@ def enableProguardInReleaseBuilds = false
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
-    compileOptions {
-        sourceCompatibility 1.8
-        targetCompatibility 1.8
-    }
+
     defaultConfig {
         applicationId "com.rememberall"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -109,7 +106,6 @@ android {
         ndk {
             abiFilters "armeabi-v7a", "x86"
         }
-        missingDimensionStrategy 'react-native-camera', 'general'
     }
     splits {
         abi {
@@ -150,6 +146,7 @@ dependencies {
     compile project(':react-native-image-picker')
     compile project(':react-native-gesture-handler')
     compile project(':react-native-fs')
+    compile project(':react-native-fetch-blob')
     compile project(':react-native-camera')
     compile project(':react-native-audio')
     implementation fileTree(dir: "libs", include: ["*.jar"])

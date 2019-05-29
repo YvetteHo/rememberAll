@@ -23,7 +23,6 @@ import Icon from 'react-native-vector-icons/dist/MaterialIcons';
 import FontIcon from 'react-native-vector-icons/dist/FontAwesome';
 import IIcon from 'react-native-vector-icons/dist/Ionicons';
 import {getData, postData, upload} from '../../components/http';
-
 import {Drawer, Card, SwipeAction, Modal, Button} from 'antd-mobile-rn';
 import Header from "../../components/header";
 import {
@@ -40,9 +39,11 @@ import {
     updateTypeNotes,
     buildRealm, sortById, sortByMediaType,rememberAllRealm
 } from "../../database/schemas";
+import RNFetchBlob from 'react-native-fetch-blob'
 import SideBar from "../../components/sideBar";
 import Uploader from "../../components/upload";
-import {DocumentDirectoryPath} from "react-native-fs";
+import Downloader from "../../components/download";
+import {DocumentDirectoryPath, downloadFile} from "react-native-fs";
 import {NavigationActions, StackActions} from "react-navigation";
 
 const Spinner = require('react-native-spinkit');
@@ -81,13 +82,14 @@ export default class HomePage extends React.Component {
             types: [],
             notesOnSearch: [],
             userName: '',
+            updateImageSkeleton: true,
         };
         this.openNote = this.openNote.bind(this);
 
     }
 
     componentDidMount() {
-
+        const isFirstLogin = this.props.navigation.getParam('isFirstLogin', null);
 
         AsyncStorage.getItem('userName').then((response) => {
             this.setState({
@@ -98,9 +100,42 @@ export default class HomePage extends React.Component {
             let operations = JSON.parse(response);
             console.log('所有操作', operations);
         });
-
-
         buildRealm().then(() => {
+            if (isFirstLogin) {
+                console.log('第一次登陆');
+                this.setState({
+                    isLoading: true,
+                });
+                const downloader = new Downloader();
+                downloader.download().then(() => {
+
+                    this.build()
+                }).catch((error) => {
+                    console.log(error)
+                })
+
+            } else {
+                console.log('未退出登录');
+
+                this.build()
+            }
+        })
+
+
+
+
+    }
+    build = () => {
+
+
+            queryTypes().then((types) => {
+                console.log('queryType', Array.from(types));
+                this.setState({
+                    types: types
+                });
+            }).catch((error) => {
+                console.log(error)
+            });
 
             queryNotes().then((notes) => {
                 this.setState({
@@ -109,13 +144,6 @@ export default class HomePage extends React.Component {
                     isLoading: false,
                 });
                 console.log(Array.from(notes));
-                queryTypes().then((types) => {
-                    this.setState({
-                        types: types
-                    });
-                }).catch((error) => {
-                    console.log(error)
-                });
                 rememberAllRealm.addListener('change', () => {
                     if (!rememberAllRealm.isInTransaction) {
                         this.reloadData();
@@ -123,13 +151,11 @@ export default class HomePage extends React.Component {
                 });
 
             });
-        });
 
         this.setState({
             isLoading: false
         });
-
-    }
+    };
 
     componentWillUnmount() {
         if (rememberAllRealm.isInTransaction) {
@@ -174,9 +200,11 @@ export default class HomePage extends React.Component {
     };
 
     reloadData = () => {
-
+        this.setState({
+            updateImageSkeleton: !this.state.updateImageSkeleton
+        });
         queryNotes().then((notes) => {
-            console.log(Array.from(notes));
+            // console.log(Array.from(notes));
             this.setState({
                 notesOnSearch: notes,
                 notes: notes,
@@ -193,6 +221,7 @@ export default class HomePage extends React.Component {
         }).catch((error) => {
             console.log(error)
         });
+        this.upload();
 
     };
     setType = (type, note) => {
@@ -234,47 +263,18 @@ export default class HomePage extends React.Component {
         this.setState({
             openNote: true
         });
-
-
         beginTrans().catch(() => {
 
         });
-
-
         if (note) {
             this.props.navigation.navigate('NewNote', {
                 note: note,
                 isNew: false,
             })
         } else {
-            // postData('http://127.0.0.1:8000/notes/', {
-            //     id: '',
-            //     name: '',
-            //     time: new Date(),
-            //     noteType: '',
-            //     noteContent: JSON.stringify([]),
-            //     noteSkeleton: JSON.stringify([]),
-            //     user: 'http://127.0.0.1:8000/users/771dbc34-7335-11e9-8e7a-acde48001122/',
-            // }).then((response) => {
-            //     response.json().then(response => {
-            //         console.log(response)
-            //     })
-            // });
 
             let noteId = uuid();
             let noteDate = new Date();
-            // AsyncStorage.getItem('operations').then((response) => {
-            //     let operations = JSON.parse(response);
-            //     operations.append({'newNote': {
-            //             id: noteId,
-            //             name: '',
-            //             time: noteDate,
-            //             noteType: '',
-            //             noteContent: [],
-            //             noteSkeleton: [],
-            //             user: 'http://127.0.0.1:8000/users/' + this.state.userId
-            //         }});
-            //     AsyncStorage.setItem('operations', JSON.stringify(operations)).then(() => {
                     const newNote = {
                         id: noteId,
                         name: '',
@@ -422,9 +422,15 @@ export default class HomePage extends React.Component {
         let types = this.state.types.map((value, index) => {
             return value.type
         });
+        // console.log(types);
+        // console.log('类型', note.noteType);
+
 
         let typeIndex = types.indexOf(note.noteType);
+        // console.log(typeIndex);
         let colors = ['#f44336', '#ff9800', '#ffeb3b', '#8bc34a', '#03a9f4'];
+
+        // console.log('缩略图片路径', 'file://' + DocumentDirectoryPath + '/images/' + note.noteSkeleton[3] + '.jpg');
 
         return (
             <SwipeAction
@@ -467,7 +473,7 @@ export default class HomePage extends React.Component {
                         {note.noteSkeleton[3] !== '' ?
                             <Image
                                 key={index}
-                                source={{uri: 'file://' + DocumentDirectoryPath + '/images/' + note.noteSkeleton[3] + '.jpg'}}
+                                source={{uri: 'file://' + DocumentDirectoryPath + '/images/' + note.noteSkeleton[3] + '.jpg' + '?' + + '?' + new Date()}}
                                 style={{width: 50, height: 50, justifyContent: 'flex-end', marginRight: 10, resizeMode: 'cover'}}
                         /> : <View/>}
                     </View>
@@ -517,30 +523,31 @@ export default class HomePage extends React.Component {
         })
     };
 // `http://127.0.0.1:8000/user/?id=${userId}`
-    fetch = () => {
-        AsyncStorage.getItem('operations').then((response) => {
-            console.log('开始上传');
-            const operations = JSON.parse(response);
-            const uploader = new Uploader(operations);
-            uploader.upload();
+    upload = () => {
+        console.log('上传呀');
+        AsyncStorage.getItem('isUploading').then((isUploading) => {
+            if (isUploading === 'false') {
+                AsyncStorage.setItem('isUploading', 'true');
+                setTimeout(() => {
+                    AsyncStorage.getItem('operations').then((response) => {
+                        console.log('开始上传');
+                        const operations = JSON.parse(response);
+                        console.log(operations);
+                        const uploader = new Uploader(operations);
+                        uploader.upload();
+                    }, 500);
+                })
+
+            }
+        }).catch((error) => {
+            console.log('获取是否上传', error)
         });
 
-        // AsyncStorage.getItem('token').then((token) => {
-        //     // console.log('http://127.0.0.1:8000/notes/' + ' -H ' + '\'Authorization: Token ' + token + '\'');
-        // getData('http://127.0.0.1:8000/notes/', {Authorization: 'Token ' + token}).then((response) => {
-        //     console.log(response)
-        // }) })
-        // this.getData('http://127.0.0.1:8000/users', {'userId': '2'})
-        // this.postData('http://127.0.0.1:8000/users/', {
-        //     "id": 'ab46f6c2-72e2-11e9-a61d-acde48001122',
-        //     "name": '1',
-        //     "password": '234',
-        // })
-        //
-        // this.getData('http://127.0.0.1:8000/notes/1', {})
-
-
     };
+
+
+
+
     // fetchUserById = () => {
     //     fetch('http://127.0.0.1:8000/users', {
     //         method: 'GET',
@@ -588,10 +595,12 @@ export default class HomePage extends React.Component {
         //         NavigationActions.navigate({routeName: 'Login'})
         //     ],
         // }))
+
         this.props.navigation.navigate('Login');
     };
     _keyExtractor = (item, index) => item.id;
     render() {
+        console.log('重新渲染');
         navigator = this.props.navigation;
 
         const sidebar = <SideBar types={this.state.types}
@@ -676,7 +685,8 @@ export default class HomePage extends React.Component {
                                     keyExtractor={this._keyExtractor}
                                 />
                             </ScrollView>
-                            <Button onClick={this.fetch}>fetch</Button>
+                            {/*<Button onClick={this.fetch}>fetch</Button>*/}
+                            {/*<Button onClick={this.download}>download</Button>*/}
                             {/*<View style={{position: 'absolute', left: 0, right: 0, bottom: 6, alignItems: 'center'}}>*/}
                             {/*    <Svg*/}
                             {/*        height="52"*/}

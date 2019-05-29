@@ -9,6 +9,7 @@ export default class Uploader {
     constructor(operations) {
 
         this.operations = operations;
+        console.log('upload的操作', operations);
 
         //     newNote: 1
         // }, {
@@ -34,7 +35,10 @@ export default class Uploader {
 
     upload = () => new Promise((resolve, reject) => {
         // console.log('喵喵喵', Object.keys(this.operations[0])[0]);
+
         if (this.operations.length === 0) {
+            AsyncStorage.setItem('isUploading', 'false');
+            console.log('结束');
             resolve()
         }
         switch (Object.keys(this.operations[0])[0]) {
@@ -89,7 +93,7 @@ export default class Uploader {
         postData('files/', formData, {
             'content-type': 'multipart/form-data'
         }).then(response => {
-            console.log(response)
+            resolve();
         }).catch((error) => {
             console.log(error)
         })
@@ -173,7 +177,7 @@ export default class Uploader {
                         });
 
                     }
-                );
+                )
             }, 2000)
 
         })

@@ -16,13 +16,12 @@ import {
 
 } from 'react-native';
 import {WhiteSpace, Card, Modal, SwipeAction, TextareaItem, Toast} from 'antd-mobile-rn';
-// import Permissions from 'react-native-permissions'
 import {AudioRecorder, AudioUtils} from 'react-native-audio';
 import Sound from 'react-native-sound';
 import Icon from "react-native-vector-icons/dist/MaterialIcons";
 import {insertAudio, updateNote} from "../database/schemas";
 import {moveFile, DocumentDirectoryPath, writeFile, mkdir, exists} from "react-native-fs";
-
+import Permissions from 'react-native-permissions'
 const uuid = require('uuid/v1');
 const { width, height } = Dimensions.get('window');
 let uuidForAudio = '';
@@ -74,35 +73,47 @@ export default class AudioOperation extends React.Component {
                 mkdir(DocumentDirectoryPath + '/audios').then();
             }
         });
-
-        AudioRecorder.checkAuthorizationStatus().then((isAuthorised) => {
-            // console.warn('是否有权限', isAuthorised);
-            this.setState({
-                hasPermission: isAuthorised });
-            if (isAuthorised === 'undetermined') {
-
-            }
-            if (!isAuthorised) {
-                console.warn('没有', isAuthorised);
-
-                if(Platform.OS === 'android') {
-                    requestAudioPermission().then(
-                        (isGranted) => {
-                            if (isGranted) {
-                                console.warn(isGranted, isAuthorised);
-                                this.setState({ hasPermission: !isAuthorised });
-                                this.startRecording();
-                            } else {
-                                this.props.endRecording();
-                            }
-                        }
-                    );
-                }
+        Permissions.check('microphone').then(response => {
+            // Response is one of: 'authorized', 'denied', 'restricted', or 'undetermined'
+            this.setState({ hasPermission: response });
+            if (response !== 'authorized') {
+                Permissions.request('microphone').then(response => {
+                    // Returns once the user has chosen to 'allow' or to 'not allow' access
+                    // Response is one of: 'authorized', 'denied', 'restricted', or 'undetermined'
+                    this.setState({ hasPermissions: response });
+                    this.startRecording();
+                })
             } else {
-                console.warn('有', isAuthorised);
                 this.startRecording();
             }
         });
+
+        // AudioRecorder.checkAuthorizationStatus().then((isAuthorised) => {
+        //     // console.warn('是否有权限', isAuthorised);
+        //     this.setState({
+        //         hasPermission: isAuthorised });
+        //     if (isAuthorised === 'undetermined') {
+        //
+        //     }
+        //     if (!isAuthorised) {
+        //
+        //         if(Platform.OS === 'android') {
+        //             requestAudioPermission().then(
+        //                 (isGranted) => {
+        //                     if (isGranted) {
+        //                         console.warn(isGranted, isAuthorised);
+        //                         this.setState({ hasPermission: !isAuthorised });
+        //                         this.startRecording();
+        //                     } else {
+        //                         this.props.endRecording();
+        //                     }
+        //                 }
+        //             );
+        //         }
+        //     } else {
+        //         this.startRecording();
+        //     }
+        // });
     }
 
     startRecording = () => {
@@ -205,33 +216,72 @@ export default class AudioOperation extends React.Component {
             console.warn('Already recording!');
             return;
         }
-        console.warn(this.state.hasPermission);
 
-        if (!this.state.hasPermission || this.state.hasPermission==="denied") {
-            // console.warn('Can\'t record, no permission granted!');
-            Modal.alert('请在应用设置中允许录音权限', null, [
-                {
-                    text: '确定',
-                    onPress: () => {
-                        this.props.endRecording();
-                    },
-                    style: 'cancel',
-                }]
-            );
-            return;
+        if (this.state.hasPermission !== 'authorized') {
+            Permissions.check('microphone').then(response => {
+                // Response is one of: 'authorized', 'denied', 'restricted', or 'undetermined'
+                console.log(response);
+                if (response !== 'authorized') {
+                    Modal.alert('请在应用设置中允许录音权限', null, [
+                        {
+                            text: '确定',
+                            onPress: () => {
+                                this.props.endRecording();
+                            },
+                            style: 'cancel',
+                        }]
+                    );
+                }
+                if (response === 'authorized') {
+                    if(this.state.stoppedRecording){
+                        this.prepareRecordingPath(this.state.audioPath);
+                    }
+                    AudioRecorder.startRecording();
+                    this.setState({recording: true, paused: false});
+                }
+            })
+        } else {
+            if(this.state.stoppedRecording){
+                this.prepareRecordingPath(this.state.audioPath);
+            }
+
+            this.setState({recording: true, paused: false});
+            try {
+                const filePath = await AudioRecorder.startRecording();
+            } catch (error) {
+                console.error(error);
+            }
         }
 
-        if(this.state.stoppedRecording){
-            this.prepareRecordingPath(this.state.audioPath);
-        }
 
-        this.setState({recording: true, paused: false});
 
-        try {
-            const filePath = await AudioRecorder.startRecording();
-        } catch (error) {
-            console.error(error);
-        }
+
+        //
+        // if (!this.state.hasPermission || this.state.hasPermission==="denied") {
+        //     // console.warn('Can\'t record, no permission granted!');
+        //     Modal.alert('请在应用设置中允许录音权限', null, [
+        //         {
+        //             text: '确定',
+        //             onPress: () => {
+        //                 this.props.endRecording();
+        //             },
+        //             style: 'cancel',
+        //         }]
+        //     );
+        //     return;
+        // }
+        //
+        // if(this.state.stoppedRecording){
+        //     this.prepareRecordingPath(this.state.audioPath);
+        // }
+        //
+        // this.setState({recording: true, paused: false});
+        //
+        // try {
+        //     const filePath = await AudioRecorder.startRecording();
+        // } catch (error) {
+        //     console.error(error);
+        // }
     }
 
     _finishRecording(didSucceed, filePath, fileSize) {

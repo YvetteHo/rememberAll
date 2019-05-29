@@ -3,13 +3,11 @@
 <plist version="1.0">
 <dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Need Camera to take photos</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Need Microphone to take videos</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Need Photo Library Usage to save videos and photos</string>
+	<string>Need Camera to take pictures and videos</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Need Photo Library Usage to launch photos</string>
+	<string>Need Library to select pictures</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Need Microphone to record audios and videos</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>

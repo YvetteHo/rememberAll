@@ -13,10 +13,13 @@ import {
 import {BoxShadow} from 'react-native-shadow'
 import IIcon from "react-native-vector-icons/dist/Ionicons";
 import {Drawer, Card, SwipeAction, Modal, Button} from 'antd-mobile-rn';
-import {queryAudios, queryImages, queryVideos} from "../database/schemas";
+import {deleteRealm, queryAudios, queryImages, queryVideos} from "../database/schemas";
 import Icon from "react-native-vector-icons/dist/MaterialIcons";
 import {postData} from "./http";
 import {NavigationActions, StackActions} from "react-navigation";
+import {DocumentDirectoryPath} from "react-native-fs";
+import RNFetchBlob from 'react-native-fetch-blob';
+import Uploader from "../components/upload";
 
 const { width, height } = Dimensions.get('window');
 const headerShadow = {
@@ -40,6 +43,21 @@ export default class SideBar extends React.Component {
     selectByMedia = (type) => {
         this.props.selectByMedia(type);
     };
+    uploadData = () => {
+        AsyncStorage.getItem('isUploading').then((isUploading) => {
+            console.log('正在上传吗', isUploading);
+            if (isUploading === 'false') {
+                AsyncStorage.setItem('isUploading', 'true');
+                AsyncStorage.getItem('operations').then((response) => {
+                    console.log('开始上传');
+                    const operations = JSON.parse(response);
+                    console.log(operations);
+                    const uploader = new Uploader(operations);
+                    uploader.upload();
+                });
+            }
+        });
+    };
     logout = () => {
         AsyncStorage.getItem('userName').then((userName) => {
             postData('users/' + userName + '/logout/', {
@@ -50,15 +68,38 @@ export default class SideBar extends React.Component {
                     response.json().then((response) => {
                         console.log(response);
                         if (response.status === "success") {
+                            RNFetchBlob.fs.unlink(DocumentDirectoryPath + '/' + 'images').catch((error) => {
+                                console.log(error)
+                            });
+                            RNFetchBlob.fs.unlink(DocumentDirectoryPath + '/' + 'audios').catch((error) => {
+                                console.log(error)
+                            });
+                            RNFetchBlob.fs.unlink(DocumentDirectoryPath + '/' + 'videos').catch((error) => {
+                                console.log(error)
+                            });
+                            deleteRealm().then(() => {
+
+                                console.log('清空realm')
+                            }).catch((error) => {
+                                console.log('清空', error)
+                            });
                             console.log('成功登出');
+                            AsyncStorage.clear().then(() => {
+                                console.log('清空AsyncStorage了')
+                                AsyncStorage.getItem('token').then(response => {
+                                    console.log('token', response)
+                                })
+                            }).then(() => {
                                 this.props.logout();
+                            });
+
                             }
-                        if (response === "fail"){
-                            console.log('登陆失败');
-                            this.setState({
-                                errorText: '用户名或密码错误'
-                            })
-                        }
+                        // if (response === "fail"){
+                        //     console.log('登陆失败');
+                        //     this.setState({
+                        //         errorText: '用户名或密码错误'
+                        //     })
+                        // }
                     })
 
                 }
@@ -133,6 +174,11 @@ export default class SideBar extends React.Component {
                             onClick={this.logout}
                         ><Text style={{color: 'white'}}>登出</Text></Button>
                     </View>
+                    <TouchableOpacity onPress={() => this.uploadData()}>
+                        <View style={styles.rowContainer}>
+                            <Icon name="sync" size={35} color="#FF5722"/>
+                        </View>
+                    </TouchableOpacity>
 
                 </ScrollView>
             </SafeAreaView>

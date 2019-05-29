@@ -179,6 +179,7 @@ export default class NewNote extends React.Component {
                 // }).catch((error) => {
                 //     console.log(error)
                 // })
+                this.updateText();
                 const oldNoteContent = this.state.noteContent;
                 oldNoteContent.push('*#image#*' + fileName);
                 this.setState({

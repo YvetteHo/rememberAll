@@ -14,9 +14,21 @@ export default class Login extends React.Component {
             password: '',
             errorText: '',
         };
-        AsyncStorage.setItem('operations', '[]');
-        // this.props.navigation.navigate('Home');
 
+    }
+    componentDidMount() {
+        console.log('mount');
+        AsyncStorage.getItem('token').then((token) => {
+            console.log('token', token)
+            if (!token) {
+                console.log('没有token')
+            } else if (token !== '') {
+                console.log(token);
+                this.props.navigation.navigate('Home', {isFirstLogin: false});
+            }
+        }).catch((error) => {
+            console.log(error)
+        });
     }
 
     register = () => {
@@ -35,14 +47,10 @@ export default class Login extends React.Component {
                         AsyncStorage.setItem('token', response.token);
                         AsyncStorage.setItem('pk', JSON.stringify(response.pk));
                         AsyncStorage.setItem('userName', this.state.userName);
-                        AsyncStorage.getItem('operations').catch(
-                            () => {
-                                console.log('没有操作')
-                                AsyncStorage.setItem('operations', '[]')
-                            }
-                        );
+                        AsyncStorage.setItem('isUploading', 'false');
+                        AsyncStorage.setItem('operations', '[]');
+                        this.props.navigation.navigate('Home', {isFirstLogin: true});
 
-                        this.props.navigation.navigate('Home');
                     }
                     if (response.status === "fail") {
                         this.setState({

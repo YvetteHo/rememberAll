@@ -64,6 +64,7 @@ const databaseOptions = {
     schema: [NoteSchema, AudioSchema, PictureSchema, VideoSchema, TypeSchema]
 };
 export const buildRealm = () => new Promise((resolve, reject) =>{
+    console.log('build 数据库');
     Realm.open(databaseOptions).then((realm) => {
         realm.write(() => {
             rememberAllRealm = realm;
@@ -91,6 +92,20 @@ export const queryTypes = () => new Promise((resolve, reject) => {
 
 export const updateType = (type, noteId) => new Promise((resolve, reject) => {
     console.log('updateType是否在写', rememberAllRealm.isInTransaction);
+    if (rememberAllRealm.isInTransaction) {
+        let result = Array.from(rememberAllRealm.objects(TYPE_SCHEMA).filtered('type == $0', type));
+        console.log('result', Array.from(result));
+        if (result.length === 0) {
+            console.log('insertType');
+            insertType(type, noteId)
+        } else {
+            console.log('喵喵喵');
+            let updatingType = rememberAllRealm.objectForPrimaryKey(TYPE_SCHEMA, type);
+            updatingType.notes.push(noteId);
+        }
+        resolve()
+    } else {
+        rememberAllRealm.write(() => {
             let result = Array.from(rememberAllRealm.objects(TYPE_SCHEMA).filtered('type == $0', type));
             console.log('result', Array.from(result));
             if (result.length === 0) {
@@ -102,6 +117,8 @@ export const updateType = (type, noteId) => new Promise((resolve, reject) => {
                 updatingType.notes.push(noteId);
             }
             resolve()
+        })
+    }
 
 });
 
@@ -170,6 +187,7 @@ export const queryImages = () => new Promise((resolve, reject) => {
 });
 
 export const insertNote = (newNote) => new Promise((resolve, reject) => {
+    console.log('insert 笔记')
 
     if (rememberAllRealm.isInTransaction) {
         rememberAllRealm.create(NOTE_SCHEMA, newNote);
@@ -453,4 +471,10 @@ export const sortByMediaType = (type) => new Promise((resolve, reject) => {
         }
     });
     resolve(result)
+});
+
+export const deleteRealm = () => new Promise((resolve) => {
+    rememberAllRealm.write(() => {
+        rememberAllRealm.deleteAll();
+    })
 });

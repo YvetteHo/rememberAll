@@ -32,7 +32,7 @@ export default class Register extends React.Component{
         postData('users/', {
             "username": this.state.userName,
             "password": this.state.password,
-        }).then((response) => {
+        }, null, 'users').then((response) => {
             if (response.status === 200) {
                 // console.log(response._bodyText)
                 response.json().then((response) => {
@@ -40,17 +40,13 @@ export default class Register extends React.Component{
                     if (response.status === "success") {
                         console.log('成功');
                         console.log(response);
+
                         AsyncStorage.setItem('token', response.token);
                         AsyncStorage.setItem('pk', JSON.stringify(response.pk));
-
-                        AsyncStorage.setItem('userName', this.state.userName).then((response) => {
-                            console.log(response);
-                            console.log('成功登陆');
-                        });
-
-                        AsyncStorage.setItem('operations', '[]').then((response) => {
-                            this.props.navigation.navigate('Home');
-                        })
+                        AsyncStorage.setItem('userName', this.state.userName);
+                        AsyncStorage.setItem('operations', '[]');
+                        AsyncStorage.setItem('isUploading', 'false');
+                        this.props.navigation.navigate('Home');
                     }
                     if (response.status === "fail"){
                         this.setState({

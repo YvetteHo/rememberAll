@@ -12,6 +12,7 @@ import com.zmxv.RNSound.RNSoundPackage;
 import com.imagepicker.ImagePickerPackage;
 import com.swmansion.gesturehandler.react.RNGestureHandlerPackage;
 import com.rnfs.RNFSPackage;
+import com.RNFetchBlob.RNFetchBlobPackage;
 import org.reactnative.camera.RNCameraPackage;
 import com.rnim.rn.audio.ReactNativeAudioPackage;
 import com.facebook.react.ReactNativeHost;
@@ -43,6 +44,7 @@ public class MainApplication extends Application implements ReactApplication {
             new ImagePickerPackage(),
             new RNGestureHandlerPackage(),
             new RNFSPackage(),
+            new RNFetchBlobPackage(),
             new RNCameraPackage(),
             new ReactNativeAudioPackage()
       );
